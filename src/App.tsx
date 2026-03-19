@@ -7,6 +7,7 @@ import Stats from "@/components/Stats";
 import HowItWorks from "@/components/HowItWorks";
 import Services from "@/components/Services";
 import Performance from "@/components/Performance";
+import AIAgents from "@/components/AIAgents";
 import Pricing from "@/components/Pricing";
 import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
@@ -35,6 +36,7 @@ function HomePage() {
       <HowItWorks />
       <Services />
       <Performance />
+      <AIAgents />
       <Pricing />
       <Testimonials />
       <FAQ />

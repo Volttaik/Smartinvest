@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { useState, useRef, useCallback } from "react";
+import { motion, AnimatePresence, useMotionValue, PanInfo } from "framer-motion";
 import {
   AreaChart, Area, ResponsiveContainer, XAxis, YAxis,
   CartesianGrid, Tooltip, PieChart, Pie, Cell,
@@ -160,113 +160,110 @@ function CardCarousel() {
   const dragX = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const CARD_WIDTH = 340;
-  const CARD_GAP = 16;
-  const VISIBLE_CARDS = 3;
-
-  const handleDragEnd = (_: any, info: PanInfo) => {
-    const threshold = 60;
-    if (info.offset.x < -threshold && activeIndex < investmentCards.length - 1) {
-      setActiveIndex(i => i + 1);
-    } else if (info.offset.x > threshold && activeIndex > 0) {
-      setActiveIndex(i => i - 1);
-    }
-  };
-
-  const goTo = (dir: number) => {
+  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
+    const swipeThreshold = 40;
+    const velocityThreshold = 300;
+    const shouldSwipe = Math.abs(info.offset.x) > swipeThreshold || Math.abs(info.velocity.x) > velocityThreshold;
+    if (!shouldSwipe) return;
+    const dir = info.offset.x < 0 ? 1 : -1;
     setActiveIndex(i => Math.max(0, Math.min(investmentCards.length - 1, i + dir)));
-  };
+  }, []);
+
+  const goTo = useCallback((dir: number) => {
+    setActiveIndex(i => Math.max(0, Math.min(investmentCards.length - 1, i + dir)));
+  }, []);
 
   return (
     <div className="relative">
-      {/* Navigation Arrows */}
-      <div className="flex items-center justify-between mb-5">
+      {/* Navigation */}
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="font-semibold text-foreground text-base">Financial Overview</h2>
-          <p className="text-xs text-muted-foreground">Swipe or use arrows to browse</p>
+          <h2 className="font-medium text-foreground text-sm">Financial Overview</h2>
+          <p className="text-[11px] text-muted-foreground">Swipe or use arrows to browse</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => goTo(-1)}
             disabled={activeIndex === 0}
-            className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-7 h-7 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => goTo(1)}
             disabled={activeIndex === investmentCards.length - 1}
-            className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-7 h-7 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Card Stack */}
+      {/* Card Stack — GPU-accelerated */}
       <div
         ref={containerRef}
-        className="relative overflow-hidden rounded-2xl"
-        style={{ height: 220 }}
+        className="relative overflow-hidden rounded-2xl touch-pan-y"
+        style={{ height: 200 }}
       >
         <motion.div
           drag="x"
           dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.15}
+          dragElastic={0.1}
+          dragMomentum={false}
           onDragEnd={handleDragEnd}
           style={{ x: dragX }}
           className="absolute inset-0 cursor-grab active:cursor-grabbing"
         >
-          <AnimatePresence mode="popLayout">
-            {investmentCards.map((card, i) => {
-              const offset = i - activeIndex;
-              const isActive = offset === 0;
-              const isVisible = Math.abs(offset) <= 2;
+          {investmentCards.map((card, i) => {
+            const offset = i - activeIndex;
+            const absOffset = Math.abs(offset);
+            const isActive = offset === 0;
 
-              if (!isVisible) return null;
+            if (absOffset > 2) return null;
 
-              return (
-                <motion.div
-                  key={card.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.85 }}
-                  animate={{
-                    x: offset * (CARD_WIDTH + CARD_GAP) + (offset > 0 ? 20 : offset < 0 ? -20 : 0),
-                    scale: isActive ? 1 : 0.92 - Math.abs(offset) * 0.03,
-                    opacity: isActive ? 1 : 0.6 - Math.abs(offset) * 0.15,
-                    zIndex: 10 - Math.abs(offset),
-                    rotateY: offset * -2,
-                  }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 30,
-                    mass: 0.8,
-                  }}
-                  className="absolute top-0 left-0 w-full max-w-[340px] sm:max-w-[380px]"
-                  style={{ originX: 0.5 }}
-                >
-                  <InvestmentCard card={card} isActive={isActive} />
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+            return (
+              <motion.div
+                key={card.id}
+                animate={{
+                  x: offset * 356 + (offset > 0 ? 16 : offset < 0 ? -16 : 0),
+                  scale: isActive ? 1 : 0.93 - absOffset * 0.02,
+                  opacity: isActive ? 1 : 0.55 - absOffset * 0.15,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 35,
+                  mass: 0.6,
+                  restDelta: 0.5,
+                  restSpeed: 10,
+                }}
+                className="absolute top-0 left-0 w-full max-w-[340px] sm:max-w-[370px]"
+                style={{
+                  zIndex: 10 - absOffset,
+                  willChange: "transform, opacity",
+                  backfaceVisibility: "hidden",
+                  WebkitBackfaceVisibility: "hidden",
+                  transform: "translateZ(0)",
+                } as React.CSSProperties}
+              >
+                <InvestmentCard card={card} isActive={isActive} />
+              </motion.div>
+            );
+          })}
         </motion.div>
       </div>
 
       {/* Dot indicators */}
-      <div className="flex items-center justify-center gap-2 mt-4">
+      <div className="flex items-center justify-center gap-1.5 mt-3">
         {investmentCards.map((_, i) => (
-          <motion.button
+          <button
             key={i}
             onClick={() => setActiveIndex(i)}
-            animate={{
-              width: i === activeIndex ? 24 : 8,
+            className="h-1.5 rounded-full transition-all duration-300"
+            style={{
+              width: i === activeIndex ? 20 : 6,
               backgroundColor: i === activeIndex ? "hsl(var(--primary))" : "hsl(var(--border))",
             }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="h-2 rounded-full"
           />
         ))}
       </div>
@@ -280,7 +277,7 @@ function InvestmentCard({ card, isActive }: { card: typeof investmentCards[0]; i
   return (
     <motion.div
       whileHover={isActive ? { y: -2, transition: { duration: 0.2 } } : {}}
-      className="relative overflow-hidden rounded-2xl bg-foreground text-primary-foreground p-6 shadow-xl h-[210px] select-none"
+      className="relative overflow-hidden rounded-2xl bg-foreground text-primary-foreground p-5 shadow-xl h-[192px] select-none"
     >
       {/* Decorative elements */}
       <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-primary/15 -translate-y-1/2 translate-x-1/2" />
@@ -454,8 +451,8 @@ export default function Dashboard() {
               <Menu className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="font-semibold text-foreground text-base">Good morning, John 👋</h1>
-              <p className="text-xs text-muted-foreground">Portfolio overview · Dec 14, 2024</p>
+              <h1 className="font-medium text-foreground text-sm">Good morning, John</h1>
+              <p className="text-[11px] text-muted-foreground">Portfolio overview · Dec 14, 2024</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -506,7 +503,7 @@ export default function Dashboard() {
                     <Icon className="w-3.5 h-3.5 text-muted-foreground" />
                   </div>
                 </div>
-                <div className="text-xl font-bold font-display text-foreground mb-1">{value}</div>
+                <div className="text-lg font-bold font-display text-foreground mb-1">{value}</div>
                 <div className={`text-xs font-medium flex items-center gap-0.5 ${up === true ? "text-green-600" : up === false ? "text-primary" : "text-muted-foreground"}`}>
                   {up === true && <ArrowUpRight className="w-3 h-3" />}
                   {up === false && <ArrowDownRight className="w-3 h-3" />}
@@ -724,28 +721,33 @@ export default function Dashboard() {
                 transition={{ delay: 0.5, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 className="bg-background border border-border rounded-2xl p-6"
               >
-                <div className="font-semibold text-foreground mb-4">Insights</div>
-                <div className="space-y-3">
+                <div className="font-medium text-foreground text-sm mb-3">Insights</div>
+                <div className="space-y-2.5">
                   {[
-                    { emoji: "📈", title: "Portfolio is outperforming", desc: "Your returns beat the S&P 500 by 8.6% YTD", accent: true },
-                    { emoji: "🎯", title: "Risk score: Low", desc: "Well-balanced across 4 asset classes", accent: false },
-                    { emoji: "💡", title: "Consider rebalancing", desc: "Tech allocation is 4% above target", accent: false },
-                  ].map((insight, i) => (
+                    { icon: TrendingUp, title: "Portfolio is outperforming", desc: "Your returns beat the S&P 500 by 8.6% YTD", accent: true },
+                    { icon: Target, title: "Risk score: Low", desc: "Well-balanced across 4 asset classes", accent: false },
+                    { icon: Layers, title: "Consider rebalancing", desc: "Tech allocation is 4% above target", accent: false },
+                  ].map((insight, i) => {
+                    const InsightIcon = insight.icon;
+                    return (
                     <motion.div
                       key={insight.title}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.55 + i * 0.08, duration: 0.4 }}
                       whileHover={{ x: 2, transition: { duration: 0.15 } }}
-                      className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors ${insight.accent ? "bg-primary/5 border border-primary/10" : "hover:bg-muted/50"}`}
+                      className={`flex items-start gap-2.5 p-2.5 rounded-xl cursor-pointer transition-colors ${insight.accent ? "bg-primary/5 border border-primary/10" : "hover:bg-muted/50"}`}
                     >
-                      <span className="text-base flex-shrink-0 mt-0.5">{insight.emoji}</span>
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${insight.accent ? "bg-primary/10" : "bg-muted"}`}>
+                        <InsightIcon className={`w-3.5 h-3.5 ${insight.accent ? "text-primary" : "text-muted-foreground"}`} />
+                      </div>
                       <div>
                         <div className="text-xs font-semibold text-foreground">{insight.title}</div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">{insight.desc}</div>
                       </div>
                     </motion.div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Quick Stats */}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence, useMotionValue, PanInfo } from "framer-motion";
+import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import {
   AreaChart, Area, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell, LineChart, Line
@@ -151,15 +151,15 @@ function MarketPriceChart() {
 }
 
 /* ─────────────────────────────────────────
-   SWIPEABLE INVESTMENT CARD CAROUSEL (Smoother)
+   SWIPEABLE INVESTMENT CARD CAROUSEL
 ───────────────────────────────────────── */
 function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
   dashData: any; user: any; balance: number;
   onFund: () => void; onInvest: () => void;
 }) {
   const [current, setCurrent] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const dragX = useMotionValue(0);
+  const [direction, setDirection] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const totalInvested = parseFloat(dashData?.investments?.total_invested || 0);
   const totalEarned   = parseFloat(dashData?.investments?.total_earned   || 0);
@@ -174,32 +174,33 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
     {
       id: "portfolio",
       label: "Portfolio Value",
-      gradient: "from-foreground via-foreground to-foreground/90",
+      gradient: "from-zinc-900 via-zinc-800 to-zinc-900",
+      accent: "bg-primary",
       content: (
         <div className="flex flex-col h-full justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">SmartInvest</span>
+            <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest">SmartInvest</span>
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
               <Wallet className="w-4 h-4 text-white" />
             </div>
           </div>
           <div>
-            <p className="text-white/50 text-xs mb-1">Total Balance</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white font-display">₦{balance.toLocaleString()}</h2>
+            <p className="text-white/40 text-xs mb-1">Total Balance</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white">₦{balance.toLocaleString()}</h2>
             <div className="flex items-center gap-2 mt-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-green-500/20 text-green-400 text-xs font-semibold">
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold">
                 +{roi}% ROI
               </span>
-              <span className="text-white/40 text-xs">{activeCount} active</span>
+              <span className="text-white/30 text-xs">{activeCount} active</span>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2.5">
             <button onClick={onFund}
-              className="flex-1 h-9 rounded-xl bg-primary flex items-center justify-center gap-1.5 text-white text-xs font-semibold hover:brightness-110 transition-all">
+              className="flex-1 h-9 rounded-xl bg-primary flex items-center justify-center gap-1.5 text-white text-xs font-semibold active:opacity-80 transition-opacity">
               <Plus className="w-3.5 h-3.5" /> Fund
             </button>
             <button onClick={onInvest}
-              className="flex-1 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center gap-1.5 text-white text-xs font-semibold hover:bg-white/15 transition-all">
+              className="flex-1 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center gap-1.5 text-white text-xs font-semibold active:opacity-80 transition-opacity">
               <TrendingUp className="w-3.5 h-3.5" /> Invest
             </button>
           </div>
@@ -209,32 +210,28 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
     {
       id: "pnl",
       label: "Profit & Loss",
-      gradient: profitLoss >= 0
-        ? "from-emerald-950 via-emerald-900 to-emerald-950/90"
-        : "from-red-950 via-red-900 to-red-950/90",
+      gradient: profitLoss >= 0 ? "from-emerald-950 via-emerald-900 to-emerald-950" : "from-red-950 via-red-900 to-red-950",
       content: (
         <div className="flex flex-col h-full justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">P&L Summary</span>
+            <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest">P&L Summary</span>
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-              {profitLoss >= 0
-                ? <TrendingUp className="w-4 h-4 text-emerald-400" />
-                : <TrendingDown className="w-4 h-4 text-red-400" />}
+              {profitLoss >= 0 ? <TrendingUp className="w-4 h-4 text-emerald-400" /> : <TrendingDown className="w-4 h-4 text-red-400" />}
             </div>
           </div>
           <div>
-            <p className="text-white/50 text-xs mb-1">Net Return</p>
-            <h2 className={`text-3xl sm:text-4xl font-bold font-display ${profitLoss >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
-              {profitLoss >= 0 ? '+' : ''}₦{Math.abs(profitLoss).toLocaleString()}
+            <p className="text-white/40 text-xs mb-1">Net Return</p>
+            <h2 className={`text-3xl sm:text-4xl font-bold ${profitLoss >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+              {profitLoss >= 0 ? "+" : ""}₦{Math.abs(profitLoss).toLocaleString()}
             </h2>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-              <p className="text-white/40 text-[10px]">Invested</p>
+              <p className="text-white/40 text-[10px] mb-0.5">Invested</p>
               <p className="text-white text-sm font-semibold">₦{totalInvested.toLocaleString()}</p>
             </div>
             <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-              <p className="text-white/40 text-[10px]">Earned</p>
+              <p className="text-white/40 text-[10px] mb-0.5">Earned</p>
               <p className="text-emerald-300 text-sm font-semibold">₦{totalEarned.toLocaleString()}</p>
             </div>
           </div>
@@ -244,11 +241,11 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
     {
       id: "performance",
       label: "Performance",
-      gradient: "from-blue-950 via-blue-900 to-blue-950/90",
+      gradient: "from-blue-950 via-blue-900 to-blue-950",
       content: (
         <div className="flex flex-col h-full justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Earnings Trend</span>
+            <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest">Earnings Trend</span>
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
               <BarChart3 className="w-4 h-4 text-blue-300" />
             </div>
@@ -259,13 +256,13 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
                 <AreaChart data={dashData.chartData}>
                   <defs>
                     <linearGradient id="card-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.4} />
+                      <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.35} />
                       <stop offset="100%" stopColor="#60a5fa" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <Area type="monotone" dataKey="earnings" stroke="#60a5fa" fill="url(#card-grad)" strokeWidth={2} dot={false} />
                   <Tooltip formatter={(v: any) => `₦${parseFloat(v).toLocaleString()}`}
-                    contentStyle={{ background: '#1e3a5f', border: 'none', borderRadius: 8, fontSize: 11, color: '#fff' }} />
+                    contentStyle={{ background: "#1e3a5f", border: "none", borderRadius: 8, fontSize: 11, color: "#fff" }} />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
@@ -284,11 +281,11 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
     {
       id: "allocation",
       label: "Asset Allocation",
-      gradient: "from-violet-950 via-purple-900 to-violet-950/90",
+      gradient: "from-violet-950 via-purple-900 to-violet-950",
       content: (
         <div className="flex flex-col h-full justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Allocation</span>
+            <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest">Allocation</span>
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
               <Layers className="w-4 h-4 text-violet-300" />
             </div>
@@ -304,7 +301,7 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex-1 space-y-1.5">
+              <div className="flex-1 space-y-2">
                 {allocation.slice(0, 4).map((a: any, i: number) => (
                   <div key={a.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
@@ -331,11 +328,11 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
     {
       id: "activity",
       label: "Recent Activity",
-      gradient: "from-orange-950 via-amber-900 to-orange-950/90",
+      gradient: "from-amber-950 via-orange-900 to-amber-950",
       content: (
         <div className="flex flex-col h-full justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Activity</span>
+            <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest">Activity</span>
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
               <Activity className="w-4 h-4 text-amber-300" />
             </div>
@@ -345,38 +342,33 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
               const isCredit = ["deposit","daily_return","trade_gain","referral_commission"].includes(tx.type);
               return (
                 <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0
-                    ${isCredit ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-                    {isCredit
-                      ? <ArrowUpRight className="w-3 h-3 text-green-400" />
-                      : <ArrowDownLeft className="w-3 h-3 text-red-400" />}
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${isCredit ? "bg-emerald-500/20" : "bg-red-500/20"}`}>
+                    {isCredit ? <ArrowUpRight className="w-3 h-3 text-emerald-400" /> : <ArrowDownLeft className="w-3 h-3 text-red-400" />}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-[10px] font-medium capitalize truncate">{tx.type?.replace(/_/g,' ')}</p>
-                  </div>
-                  <span className={`text-[10px] font-bold ${isCredit ? 'text-green-400' : 'text-red-400'}`}>
-                    {isCredit ? '+' : '-'}₦{parseFloat(tx.amount).toLocaleString()}
+                  <p className="flex-1 text-white text-[10px] font-medium capitalize truncate">{tx.type?.replace(/_/g," ")}</p>
+                  <span className={`text-[10px] font-bold ${isCredit ? "text-emerald-400" : "text-red-400"}`}>
+                    {isCredit ? "+" : "-"}₦{parseFloat(tx.amount).toLocaleString()}
                   </span>
                 </div>
               );
             }) : (
-              <div className="flex-1 flex items-center justify-center h-full pt-4">
+              <div className="flex-1 flex items-center justify-center h-full pt-6">
                 <p className="text-white/30 text-xs">No recent transactions</p>
               </div>
             )}
           </div>
-          <div className="text-[10px] text-white/30 text-right">Last {recent.length} transactions</div>
+          <p className="text-[10px] text-white/30 text-right">Last {recent.length} transactions</p>
         </div>
       ),
     },
     {
       id: "investments",
       label: "Active Investments",
-      gradient: "from-teal-950 via-cyan-900 to-teal-950/90",
+      gradient: "from-teal-950 via-cyan-900 to-teal-950",
       content: (
         <div className="flex flex-col h-full justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Investments</span>
+            <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest">Investments</span>
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
               <Target className="w-4 h-4 text-cyan-300" />
             </div>
@@ -391,18 +383,16 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
                     <span className="text-cyan-300 text-[10px] font-bold shrink-0 ml-1">+{inv.daily_return_pct}%</span>
                   </div>
                   <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                    <motion.div className="h-full bg-cyan-400 rounded-full"
-                      initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-                      transition={{ duration: 1, delay: i * 0.1 }} />
+                    <div className="h-full bg-cyan-400 rounded-full" style={{ width: `${pct}%` }} />
                   </div>
                   <div className="flex justify-between mt-1">
                     <span className="text-white/40 text-[9px]">Day {inv.days_completed}/{inv.duration_days}</span>
-                    <span className="text-green-400 text-[9px]">+₦{parseFloat(inv.total_earned).toLocaleString()}</span>
+                    <span className="text-emerald-400 text-[9px]">+₦{parseFloat(inv.total_earned).toLocaleString()}</span>
                   </div>
                 </div>
               );
             }) : (
-              <div className="flex-1 flex items-center justify-center h-full pt-4">
+              <div className="flex-1 flex items-center justify-center h-full pt-6">
                 <div className="text-center">
                   <Package className="w-7 h-7 text-white/20 mx-auto mb-1" />
                   <p className="text-white/30 text-xs">No active investments</p>
@@ -410,89 +400,82 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
               </div>
             )}
           </div>
-          <div className="text-[10px] text-white/30">{activeCount} total positions</div>
+          <p className="text-[10px] text-white/30">{activeCount} total positions</p>
         </div>
       ),
     },
   ];
 
   const total = cards.length;
-  const goTo = (idx: number) => setCurrent(((idx % total) + total) % total);
+
+  const goTo = (idx: number, dir: number) => {
+    setDirection(dir);
+    setCurrent(((idx % total) + total) % total);
+  };
 
   const handleDragEnd = (_: never, info: PanInfo) => {
-    const velocity = info.velocity.x;
-    const offset = info.offset.x;
-    if (Math.abs(velocity) > 400) {
-      if (velocity < 0) goTo(current + 1);
-      else goTo(current - 1);
-    } else if (Math.abs(offset) > 60) {
-      if (offset < 0) goTo(current + 1);
-      else goTo(current - 1);
+    const swipe = Math.abs(info.offset.x) > 50 || Math.abs(info.velocity.x) > 300;
+    if (swipe) {
+      if (info.offset.x < 0) goTo(current + 1, 1);
+      else goTo(current - 1, -1);
     }
-    dragX.set(0);
-    setDragging(false);
+  };
+
+  const variants = {
+    enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? "-100%" : "100%", opacity: 0 }),
   };
 
   return (
-    <div className="select-none">
-      <div className="relative h-[220px]">
-        {cards.map((card, i) => {
-          const rawOffset = (i - current + total) % total;
-          const isActive = rawOffset === 0;
-          const isBehind1 = rawOffset === 1;
-          const isBehind2 = rawOffset === 2;
-          const isPrev = rawOffset === total - 1;
-          const isHidden = rawOffset > 2 && rawOffset < total - 1;
-
-          let zIndex = 0, scale = 0.82, translateY = 0, opacity = 0;
-
-          if (isActive)       { zIndex = 30; scale = 1;    translateY = 0;  opacity = 1; }
-          else if (isBehind1) { zIndex = 20; scale = 0.94; translateY = 10; opacity = 0.7; }
-          else if (isBehind2) { zIndex = 10; scale = 0.87; translateY = 20; opacity = 0.4; }
-          else if (isPrev)    { zIndex = 20; scale = 0.94; translateY = 10; opacity = 0.7; }
-          if (isHidden) opacity = 0;
-
-          return (
-            <motion.div
-              key={card.id}
-              className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${card.gradient} p-5 sm:p-6 border border-white/10 shadow-2xl cursor-grab active:cursor-grabbing`}
-              style={{ zIndex, transformOrigin: "top center" }}
-              animate={{ scale, translateY, opacity }}
-              transition={{ type: "spring", stiffness: 380, damping: 38, mass: 0.7 }}
-              drag={isActive ? "x" : false}
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.12}
-              dragMomentum={false}
-              onDragStart={() => setDragging(true)}
-              onDragEnd={handleDragEnd}
-              whileDrag={{ scale: 0.975, cursor: "grabbing" }}
-            >
-              {card.content}
-
-              {isActive && (
-                <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 flex gap-1.5">
-                  {cards.map((_, di) => (
-                    <button key={di} onClick={() => !dragging && setCurrent(di)}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${di === current ? 'w-5 bg-white' : 'w-1.5 bg-white/30 hover:bg-white/50'}`} />
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          );
-        })}
+    <div className="select-none" ref={containerRef}>
+      {/* Card viewport */}
+      <div className="relative h-[210px] overflow-hidden rounded-2xl">
+        <AnimatePresence initial={false} custom={direction} mode="popLayout">
+          <motion.div
+            key={current}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: "tween", ease: [0.25, 0.46, 0.45, 0.94], duration: 0.3 }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.08}
+            dragMomentum={false}
+            onDragEnd={handleDragEnd}
+            className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${cards[current].gradient} p-5 sm:p-6 border border-white/8 shadow-xl cursor-grab active:cursor-grabbing`}
+          >
+            {cards[current].content}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      <div className="flex items-center justify-between mt-5 px-1">
-        <button onClick={() => goTo(current - 1)}
-          className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-muted/60 transition-colors">
+      {/* Dots + arrows */}
+      <div className="flex items-center justify-between mt-4 px-0.5">
+        <button
+          onClick={() => goTo(current - 1, -1)}
+          className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-muted/60 active:scale-95 transition-all">
           <ChevronLeft className="w-4 h-4 text-muted-foreground" />
         </button>
-        <div className="text-center">
-          <p className="text-xs font-semibold text-foreground">{cards[current].label}</p>
-          <p className="text-[10px] text-muted-foreground">{current + 1} of {total} · Swipe or tap arrows</p>
+
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex gap-1.5">
+            {cards.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goTo(i, i > current ? 1 : -1)}
+                className={`h-1.5 rounded-full transition-all duration-200 ${i === current ? "w-5 bg-foreground" : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
+              />
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground">{cards[current].label} · {current + 1}/{total}</p>
         </div>
-        <button onClick={() => goTo(current + 1)}
-          className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-muted/60 transition-colors">
+
+        <button
+          onClick={() => goTo(current + 1, 1)}
+          className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-muted/60 active:scale-95 transition-all">
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </button>
       </div>

@@ -1,8 +1,19 @@
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/lib/auth';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/providers';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !token) {
+      router.replace('/login');
+    }
+  }, [token, loading, router]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -10,6 +21,6 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       </div>
     );
   }
-  if (!token) return <Navigate to="/login" replace />;
+  if (!token) return null;
   return <>{children}</>;
 }

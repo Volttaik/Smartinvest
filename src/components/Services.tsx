@@ -1,3 +1,5 @@
+'use client';
+
 import { motion } from "framer-motion";
 import { BarChart3, Landmark, LineChart, Shield, Globe2, Briefcase, ArrowRight } from "lucide-react";
 

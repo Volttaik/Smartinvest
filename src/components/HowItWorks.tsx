@@ -1,7 +1,9 @@
+'use client';
+
 import { motion } from "framer-motion";
 import { UserPlus, SlidersHorizontal, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 const steps = [
   {
@@ -60,7 +62,7 @@ export default function HowItWorks() {
               className="bg-primary text-primary-foreground font-semibold px-8 rounded-xl hover:brightness-110"
               asChild
             >
-              <Link to="/register">Get Started Free</Link>
+              <Link href="/register">Get Started Free</Link>
             </Button>
           </motion.div>
 

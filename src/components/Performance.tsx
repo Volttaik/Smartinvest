@@ -1,3 +1,5 @@
+'use client';
+
 import { motion } from "framer-motion";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,

@@ -1,8 +1,10 @@
+'use client';
+
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Lock } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { getPackages } from "@/lib/api";
 
 const TIER_COLORS: Record<string, string> = {
@@ -100,7 +102,7 @@ export default function Pricing() {
                   </div>
                   <Button asChild size="sm"
                     className={`w-full rounded-xl text-xs font-semibold ${isFeatured ? "bg-primary text-white hover:brightness-110" : "bg-foreground text-primary-foreground hover:brightness-110"}`}>
-                    <Link to="/register">Get Started</Link>
+                    <Link href="/register">Get Started</Link>
                   </Button>
                 </motion.div>
               );

@@ -1,6 +1,8 @@
+'use client';
+
 import { TrendingUp } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 const footerLinks = {
   Company: [
@@ -18,7 +20,6 @@ const footerLinks = {
     { label: "Sign Up", href: "/register" },
     { label: "Sign In", href: "/login" },
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Portfolio", href: "/portfolio" },
   ],
   Legal: [
     { label: "Privacy Policy", href: "/privacy" },
@@ -32,7 +33,7 @@ export default function Footer() {
       <div className="container mx-auto px-6 py-16">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
           <div className="col-span-2 md:col-span-1">
-            <Link to="/" className="flex items-center gap-2.5 mb-4">
+            <Link href="/" className="flex items-center gap-2.5 mb-4">
               <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 text-primary-foreground" />
               </div>
@@ -51,7 +52,7 @@ export default function Footer() {
               <ul className="space-y-2.5">
                 {links.map(({ label, href }) => (
                   <li key={label}>
-                    <Link to={href} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    <Link href={href} className="text-sm text-muted-foreground hover:text-primary transition-colors">
                       {label}
                     </Link>
                   </li>
@@ -63,11 +64,9 @@ export default function Footer() {
 
         <Separator />
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 pt-6">
-          <p className="text-xs text-muted-foreground">
-            © 2025 Smart Invest. All rights reserved.
-          </p>
+          <p className="text-xs text-muted-foreground">© 2025 Smart Invest. All rights reserved.</p>
           <p className="text-xs text-muted-foreground text-center">
-            Investment involves risk. Returns are probabilistic and not guaranteed. You may lose capital.
+            Investment involves risk. Returns are probabilistic and not guaranteed.
           </p>
         </div>
       </div>

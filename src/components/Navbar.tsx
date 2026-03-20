@@ -1,9 +1,12 @@
+'use client';
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Menu, X, TrendingUp, ArrowLeft, LayoutDashboard, User } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/lib/auth";
+import { Menu, X, TrendingUp, ArrowLeft, User } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/app/providers";
 
 function ProfileAvatar({ src, size = "sm" }: { src?: string; size?: "sm" | "md" }) {
   const dim = size === "sm" ? "w-6 h-6" : "w-9 h-9";
@@ -27,12 +30,12 @@ const links = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
+  const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
 
-  const isAuthPage = ["/login", "/register"].includes(location.pathname);
-  const isLegalPage = ["/support", "/privacy", "/terms"].includes(location.pathname);
+  const isAuthPage = ["/login", "/register"].includes(pathname);
+  const isLegalPage = ["/support", "/privacy", "/terms"].includes(pathname);
   const isSpecialPage = isAuthPage || isLegalPage;
 
   useEffect(() => {
@@ -43,7 +46,7 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    router.push("/");
   };
 
   return (
@@ -58,7 +61,7 @@ export default function Navbar() {
       }`}
     >
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5 group">
+        <Link href="/" className="flex items-center gap-2.5 group">
           <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm group-hover:brightness-110 transition-all">
             <TrendingUp className="w-4 h-4 text-primary-foreground" />
           </div>
@@ -69,17 +72,17 @@ export default function Navbar() {
 
         {isAuthPage ? (
           <div className="flex items-center gap-4">
-            <Link to="/" className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
+            <Link href="/" className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
             </Link>
             <div className="flex items-center gap-2">
-              {location.pathname === "/login" ? (
+              {pathname === "/login" ? (
                 <Button size="sm" className="bg-primary text-primary-foreground font-semibold px-5 rounded-lg hover:brightness-110" asChild>
-                  <Link to="/register">Create Account</Link>
+                  <Link href="/register">Create Account</Link>
                 </Button>
               ) : (
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/login" className="text-sm font-medium">Sign In</Link>
+                  <Link href="/login" className="text-sm font-medium">Sign In</Link>
                 </Button>
               )}
             </div>
@@ -89,7 +92,7 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-7">
               {links.map(({ label, href }) => (
                 href.startsWith("/") && !href.includes("#") ? (
-                  <Link key={label} to={href}
+                  <Link key={label} href={href}
                     className="text-sm text-muted-foreground hover:text-foreground font-medium transition-colors relative group/link">
                     {label}
                     <span className="absolute -bottom-0.5 left-0 w-0 h-px bg-primary transition-all duration-200 group-hover/link:w-full" />
@@ -108,7 +111,7 @@ export default function Navbar() {
               {user ? (
                 <>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link to="/dashboard" className="flex items-center gap-2">
+                    <Link href="/dashboard" className="flex items-center gap-2">
                       <ProfileAvatar src={user?.profile_picture} size="sm" />
                       Dashboard
                     </Link>
@@ -120,10 +123,10 @@ export default function Navbar() {
               ) : (
                 <>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link to="/login" className="text-sm font-medium">Sign In</Link>
+                    <Link href="/login" className="text-sm font-medium">Sign In</Link>
                   </Button>
                   <Button size="sm" className="bg-primary text-primary-foreground font-semibold px-5 rounded-lg shadow-sm hover:brightness-110" asChild>
-                    <Link to="/register">Get Started</Link>
+                    <Link href="/register">Get Started</Link>
                   </Button>
                 </>
               )}
@@ -142,9 +145,9 @@ export default function Navbar() {
             exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }}
             className="md:hidden bg-background border-b border-border overflow-hidden">
             <div className="container mx-auto px-6 py-5 flex flex-col gap-4">
-              {links.map(({ label, href }, i) => (
+              {links.map(({ label, href }) => (
                 href.startsWith("/") && !href.includes("#") ? (
-                  <Link key={label} to={href}
+                  <Link key={label} href={href}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
                     onClick={() => setMenuOpen(false)}>{label}</Link>
                 ) : (
@@ -157,7 +160,7 @@ export default function Navbar() {
                 {user ? (
                   <>
                     <Button variant="outline" size="sm" className="flex-1 gap-2" asChild>
-                      <Link to="/dashboard" onClick={() => setMenuOpen(false)}>
+                      <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
                         <ProfileAvatar src={user?.profile_picture} size="sm" />
                         Dashboard
                       </Link>
@@ -169,10 +172,10 @@ export default function Navbar() {
                 ) : (
                   <>
                     <Button variant="outline" size="sm" className="flex-1" asChild>
-                      <Link to="/login" onClick={() => setMenuOpen(false)}>Sign In</Link>
+                      <Link href="/login" onClick={() => setMenuOpen(false)}>Sign In</Link>
                     </Button>
                     <Button size="sm" className="flex-1 bg-primary text-primary-foreground" asChild>
-                      <Link to="/register" onClick={() => setMenuOpen(false)}>Get Started</Link>
+                      <Link href="/register" onClick={() => setMenuOpen(false)}>Get Started</Link>
                     </Button>
                   </>
                 )}

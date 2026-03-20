@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useRef, useState } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -41,11 +43,7 @@ export default function TickerBar() {
 
   return (
     <div className="fixed top-0 left-0 right-0 w-full bg-foreground border-b border-white/10 overflow-hidden py-2.5 z-50">
-      <div
-        ref={containerRef}
-        className="flex gap-0 whitespace-nowrap"
-        style={{ transform: `translateX(-${offset}px)` }}
-      >
+      <div ref={containerRef} className="flex gap-0 whitespace-nowrap" style={{ transform: `translateX(-${offset}px)` }}>
         {items.map((t, i) => (
           <div key={i} className="inline-flex items-center gap-2 px-6 border-r border-white/10">
             <span className="text-xs font-semibold text-white/70 uppercase tracking-wide">{t.symbol}</span>

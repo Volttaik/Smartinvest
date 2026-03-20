@@ -1,7 +1,9 @@
+'use client';
+
 import { motion } from "framer-motion";
 import { Bot, Flame, Gem, Bitcoin, BarChart3, Shield, Cpu, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 const agents = [
   {
@@ -98,7 +100,7 @@ export default function AIAgents() {
               className="bg-primary text-primary-foreground font-semibold px-8 rounded-xl hover:brightness-110 transition-all"
               asChild
             >
-              <Link to="/register">
+              <Link href="/register">
                 Activate AI Agents <ArrowRight className="ml-2 w-4 h-4" />
               </Link>
             </Button>

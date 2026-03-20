@@ -25,7 +25,6 @@ api.interceptors.response.use(
 
 export default api;
 
-export const getCaptcha = () => api.get('/auth/captcha').then(r => r.data);
 export const login = (data: object) => api.post('/auth/login', data).then(r => r.data);
 export const register = (data: object) => api.post('/auth/register', data).then(r => r.data);
 export const getMe = () => api.get('/auth/me').then(r => r.data);

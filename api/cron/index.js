@@ -1,5 +1,5 @@
 const express = require('express');
-const { Investment, User, Transaction, Trade, CaptchaCode } = require('../models');
+const { Investment, User, Transaction, Trade } = require('../models');
 const connectDB = require('../lib/db');
 
 const ASSETS = ['Oil & Energy', 'Crypto', 'Gold', 'Equities', 'Forex', 'Real Estate'];
@@ -135,19 +135,6 @@ async function runInternalTrades() {
   }
 }
 
-async function cleanExpiredCaptchas() {
-  try {
-    await connectDB();
-
-    const result = await CaptchaCode.deleteMany({ expires_at: { $lt: new Date() } });
-    console.log(`[CRON] Cleaned ${result.deletedCount} expired captchas.`);
-    return { success: true, deleted: result.deletedCount };
-  } catch (err) {
-    console.error('[CRON] Captcha cleanup error:', err.message);
-    return { success: false, error: err.message };
-  }
-}
-
 // Main cron handler for Vercel
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -170,18 +157,13 @@ export default async function handler(req, res) {
     case 'internal-trades':
       result = await runInternalTrades();
       break;
-    case 'cleanup-captchas':
-      result = await cleanExpiredCaptchas();
-      break;
     case 'all':
     default:
       const r1 = await applyDailyReturns();
       const r2 = await runInternalTrades();
-      const r3 = await cleanExpiredCaptchas();
       result = {
         dailyReturns: r1,
-        internalTrades: r2,
-        cleanupCaptchas: r3
+        internalTrades: r2
       };
   }
 

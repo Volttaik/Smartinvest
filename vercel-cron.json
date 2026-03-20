@@ -7,10 +7,6 @@
     {
       "path": "/api/cron?job=internal-trades&secret=YOUR_CRON_SECRET",
       "schedule": "0 */4 * * *"
-    },
-    {
-      "path": "/api/cron?job=cleanup-captchas&secret=YOUR_CRON_SECRET",
-      "schedule": "*/30 * * * *"
     }
   ]
 }

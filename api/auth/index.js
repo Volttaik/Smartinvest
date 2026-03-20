@@ -1,8 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { v4: uuidv4 } = require('uuid');
-const { User, CaptchaCode } = require('../../models');
+const { User } = require('../../models');
 const connectDB = require('../../lib/db');
 
 const router = express.Router();
@@ -13,59 +12,14 @@ function generateReferralCode(username) {
   return username.toUpperCase().slice(0, 4) + Math.random().toString(36).substring(2, 7).toUpperCase();
 }
 
-// Generate 4-digit CAPTCHA code locally
-router.get('/captcha', async (req, res) => {
-  try {
-    await connectDB();
-
-    const code = String(Math.floor(1000 + Math.random() * 9000));
-    const sessionKey = uuidv4();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    await CaptchaCode.create({
-      session_key: sessionKey,
-      code: code,
-      expires_at: expiresAt
-    });
-
-    res.json({ sessionKey, code });
-  } catch (err) {
-    console.error('Captcha error:', err);
-    res.status(500).json({ error: 'Failed to generate captcha' });
-  }
-});
-
-async function validateCaptcha(sessionKey, userCode) {
-  const captcha = await CaptchaCode.findOne({
-    session_key: sessionKey,
-    expires_at: { $gt: new Date() }
-  });
-
-  if (!captcha) return false;
-
-  const valid = captcha.code === String(userCode);
-  if (valid) {
-    await CaptchaCode.deleteOne({ session_key: sessionKey });
-  }
-  return valid;
-}
-
 router.post('/register', async (req, res) => {
   try {
     await connectDB();
 
-    const { username, email, password, profilePicture, referralCode, captchaKey, captchaCode } = req.body;
+    const { username, email, password, profilePicture, referralCode } = req.body;
 
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Username, email, and password are required' });
-    }
-    if (!captchaKey || !captchaCode) {
-      return res.status(400).json({ error: 'CAPTCHA verification required' });
-    }
-
-    const captchaValid = await validateCaptcha(captchaKey, captchaCode);
-    if (!captchaValid) {
-      return res.status(400).json({ error: 'Invalid or expired CAPTCHA code' });
     }
 
     const existing = await User.findOne({
@@ -122,18 +76,10 @@ router.post('/login', async (req, res) => {
   try {
     await connectDB();
 
-    const { email, password, captchaKey, captchaCode } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
-    }
-    if (!captchaKey || !captchaCode) {
-      return res.status(400).json({ error: 'CAPTCHA verification required' });
-    }
-
-    const captchaValid = await validateCaptcha(captchaKey, captchaCode);
-    if (!captchaValid) {
-      return res.status(400).json({ error: 'Invalid or expired CAPTCHA code' });
     }
 
     const user = await User.findOne({ email: email.toLowerCase() });

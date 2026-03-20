@@ -139,8 +139,8 @@ export default function Register() {
                 <TrendingUp className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <div className="text-sm font-semibold text-white">5% Referral Commission</div>
-                <div className="text-xs text-white/50">Earn when friends invest</div>
+                <div className="text-sm font-semibold text-white">Up to 50% Referral Commission</div>
+                <div className="text-xs text-white/50">Tiered rewards — earn more, grow more</div>
               </div>
             </div>
           </motion.div>

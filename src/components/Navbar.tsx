@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Menu, X, TrendingUp, ArrowLeft, User } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
@@ -27,6 +27,28 @@ const links = [
   { label: "Support", href: "/support" },
 ];
 
+const menuVariants = {
+  closed: {
+    clipPath: "inset(0 0 100% 0 round 0px)",
+    opacity: 0,
+    transition: { duration: 0.22, ease: [0.4, 0, 1, 1] },
+  },
+  open: {
+    clipPath: "inset(0 0 0% 0 round 0px)",
+    opacity: 1,
+    transition: { duration: 0.28, ease: [0, 0, 0.2, 1] },
+  },
+};
+
+const itemVariants = {
+  closed: { opacity: 0, y: -6 },
+  open: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.04, duration: 0.22, ease: [0, 0, 0.2, 1] },
+  }),
+};
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -40,40 +62,54 @@ export default function Navbar() {
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [menuOpen]);
 
   const handleLogout = () => {
     logout();
     router.push("/");
   };
 
+  const Logo = () => (
+    <Link href="/" className="flex items-center gap-2.5 group" onClick={() => setMenuOpen(false)}>
+      <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm group-hover:brightness-110 transition-all flex-shrink-0">
+        <img src="/favicon.jpg" alt="SmartInvest" className="w-full h-full object-cover" />
+      </div>
+      <span className="text-lg font-bold tracking-tight font-display text-foreground">
+        Smart Invest<span className="text-primary">.</span>
+      </span>
+    </Link>
+  );
+
   return (
     <motion.nav
       initial={{ y: -80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className={`fixed top-[38px] left-0 right-0 z-40 transition-all duration-300 ${
-        scrolled || isSpecialPage
-          ? "bg-background/95 backdrop-blur-md border-b border-border shadow-sm"
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className={`fixed top-[38px] left-0 right-0 z-40 transition-colors duration-200 ${
+        scrolled || isSpecialPage || menuOpen
+          ? "bg-background/97 backdrop-blur-xl border-b border-border shadow-sm"
           : "bg-transparent"
       }`}
     >
-      <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm group-hover:brightness-110 transition-all">
-            <TrendingUp className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="text-lg font-bold tracking-tight font-display text-foreground">
-            Smart Invest<span className="text-primary">.</span>
-          </span>
-        </Link>
+      <div className="container mx-auto px-6 py-3.5 flex items-center justify-between">
+        <Logo />
 
         {isAuthPage ? (
           <div className="flex items-center gap-4">
-            <Link href="/" className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
-              <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
+            <Link href="/"
+              className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
+              ← Back to Home
             </Link>
             <div className="flex items-center gap-2">
               {pathname === "/login" ? (
@@ -89,6 +125,7 @@ export default function Navbar() {
           </div>
         ) : (
           <>
+            {/* Desktop nav */}
             <div className="hidden md:flex items-center gap-7">
               {links.map(({ label, href }) => (
                 href.startsWith("/") && !href.includes("#") ? (
@@ -132,31 +169,65 @@ export default function Navbar() {
               )}
             </div>
 
-            <button className="md:hidden text-foreground p-1" onClick={() => setMenuOpen(!menuOpen)}>
-              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+            {/* Mobile hamburger */}
+            <motion.button
+              className="md:hidden text-foreground p-2 rounded-lg hover:bg-muted transition-colors"
+              onClick={() => setMenuOpen(v => !v)}
+              whileTap={{ scale: 0.92 }}
+              transition={{ duration: 0.1 }}
+              aria-label="Toggle menu"
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                {menuOpen ? (
+                  <motion.span key="close"
+                    initial={{ rotate: -45, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: 45, opacity: 0 }} transition={{ duration: 0.15 }}>
+                    <X className="w-5 h-5" />
+                  </motion.span>
+                ) : (
+                  <motion.span key="open"
+                    initial={{ rotate: 45, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: -45, opacity: 0 }} transition={{ duration: 0.15 }}>
+                    <Menu className="w-5 h-5" />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
           </>
         )}
       </div>
 
+      {/* Mobile menu */}
       <AnimatePresence>
         {menuOpen && !isAuthPage && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }}
-            className="md:hidden bg-background border-b border-border overflow-hidden">
-            <div className="container mx-auto px-6 py-5 flex flex-col gap-4">
-              {links.map(({ label, href }) => (
-                href.startsWith("/") && !href.includes("#") ? (
-                  <Link key={label} href={href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
-                    onClick={() => setMenuOpen(false)}>{label}</Link>
-                ) : (
-                  <a key={label} href={href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
-                    onClick={() => setMenuOpen(false)}>{label}</a>
-                )
+          <motion.div
+            key="mobile-menu"
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={menuVariants}
+            className="md:hidden bg-background border-b border-border will-change-transform"
+          >
+            <div className="container mx-auto px-6 py-4 flex flex-col gap-1">
+              {links.map(({ label, href }, i) => (
+                <motion.div key={label} custom={i} variants={itemVariants}>
+                  {href.startsWith("/") && !href.includes("#") ? (
+                    <Link href={href}
+                      className="block py-2.5 px-3 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-all font-medium"
+                      onClick={() => setMenuOpen(false)}>
+                      {label}
+                    </Link>
+                  ) : (
+                    <a href={href}
+                      className="block py-2.5 px-3 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-all font-medium"
+                      onClick={() => setMenuOpen(false)}>
+                      {label}
+                    </a>
+                  )}
+                </motion.div>
               ))}
-              <div className="flex gap-3 pt-2">
+
+              <motion.div custom={links.length} variants={itemVariants} className="flex gap-3 pt-3 border-t border-border mt-2">
                 {user ? (
                   <>
                     <Button variant="outline" size="sm" className="flex-1 gap-2" asChild>
@@ -165,7 +236,8 @@ export default function Navbar() {
                         Dashboard
                       </Link>
                     </Button>
-                    <Button size="sm" className="flex-1 bg-primary text-primary-foreground" onClick={() => { handleLogout(); setMenuOpen(false); }}>
+                    <Button size="sm" className="flex-1 bg-primary text-primary-foreground"
+                      onClick={() => { handleLogout(); setMenuOpen(false); }}>
                       Log out
                     </Button>
                   </>
@@ -179,7 +251,7 @@ export default function Navbar() {
                     </Button>
                   </>
                 )}
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         )}

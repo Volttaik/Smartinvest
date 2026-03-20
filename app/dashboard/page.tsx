@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import {
   AreaChart, Area, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip,
-  PieChart, Pie, Cell, LineChart, Line
+  PieChart, Pie, Cell
 } from "recharts";
 import {
   TrendingUp, TrendingDown, LogOut, BarChart3, Wallet,
@@ -12,6 +12,7 @@ import {
   CreditCard, Zap, RefreshCw, Copy, Check, Package, AlertCircle,
   ChevronLeft, ChevronRight, Target, Layers, DollarSign, Bell,
   ArrowDownLeft, Plus, Minus, Clock, Star, PieChartIcon, Gem,
+  Coins, LineChart, Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -589,16 +590,21 @@ function PortfolioTab({ dashData, balance }: { dashData: any; balance: number })
    ASSETS TAB
 ───────────────────────────────────────── */
 const CRYPTO_LIST = [
-  { id: "bitcoin",       symbol: "BTC",  name: "Bitcoin",    bg: "bg-orange-50 border-orange-100",  text: "text-orange-600",  fallback: { usd: 65000, usd_24h_change: 2.4  } },
-  { id: "ethereum",      symbol: "ETH",  name: "Ethereum",   bg: "bg-violet-50 border-violet-100",  text: "text-violet-600",  fallback: { usd: 3200,  usd_24h_change: 1.8  } },
-  { id: "binancecoin",   symbol: "BNB",  name: "BNB",        bg: "bg-yellow-50 border-yellow-100",  text: "text-yellow-600",  fallback: { usd: 580,   usd_24h_change: -0.5 } },
-  { id: "solana",        symbol: "SOL",  name: "Solana",     bg: "bg-emerald-50 border-emerald-100",text: "text-emerald-600", fallback: { usd: 155,   usd_24h_change: 3.2  } },
-  { id: "tether",        symbol: "USDT", name: "Tether",     bg: "bg-blue-50 border-blue-100",      text: "text-blue-600",    fallback: { usd: 1.0,   usd_24h_change: 0.01 } },
-  { id: "ripple",        symbol: "XRP",  name: "XRP",        bg: "bg-sky-50 border-sky-100",         text: "text-sky-600",     fallback: { usd: 0.60,  usd_24h_change: 1.1  } },
-  { id: "dogecoin",      symbol: "DOGE", name: "Dogecoin",   bg: "bg-amber-50 border-amber-100",    text: "text-amber-600",   fallback: { usd: 0.14,  usd_24h_change: 2.5  } },
-  { id: "cardano",       symbol: "ADA",  name: "Cardano",    bg: "bg-blue-50 border-blue-200",      text: "text-blue-700",    fallback: { usd: 0.45,  usd_24h_change: -0.8 } },
-  { id: "avalanche-2",   symbol: "AVAX", name: "Avalanche",  bg: "bg-red-50 border-red-100",        text: "text-red-600",     fallback: { usd: 36.00, usd_24h_change: 1.5  } },
-  { id: "matic-network", symbol: "MATIC",name: "Polygon",    bg: "bg-purple-50 border-purple-100",  text: "text-purple-600",  fallback: { usd: 0.58,  usd_24h_change: 0.9  } },
+  { id: "bitcoin",           symbol: "BTC",  name: "Bitcoin",      bg: "bg-orange-50 border-orange-100",   text: "text-orange-600",  fallback: { usd: 65000,  usd_24h_change: 2.4  } },
+  { id: "ethereum",          symbol: "ETH",  name: "Ethereum",     bg: "bg-violet-50 border-violet-100",   text: "text-violet-600",  fallback: { usd: 3200,   usd_24h_change: 1.8  } },
+  { id: "binancecoin",       symbol: "BNB",  name: "BNB",          bg: "bg-yellow-50 border-yellow-100",   text: "text-yellow-600",  fallback: { usd: 580,    usd_24h_change: -0.5 } },
+  { id: "solana",            symbol: "SOL",  name: "Solana",       bg: "bg-emerald-50 border-emerald-100", text: "text-emerald-600", fallback: { usd: 155,    usd_24h_change: 3.2  } },
+  { id: "tether",            symbol: "USDT", name: "Tether",       bg: "bg-blue-50 border-blue-100",       text: "text-blue-600",    fallback: { usd: 1.0,    usd_24h_change: 0.01 } },
+  { id: "ripple",            symbol: "XRP",  name: "XRP",          bg: "bg-sky-50 border-sky-100",          text: "text-sky-600",     fallback: { usd: 0.60,   usd_24h_change: 1.1  } },
+  { id: "dogecoin",          symbol: "DOGE", name: "Dogecoin",     bg: "bg-amber-50 border-amber-100",     text: "text-amber-600",   fallback: { usd: 0.14,   usd_24h_change: 2.5  } },
+  { id: "cardano",           symbol: "ADA",  name: "Cardano",      bg: "bg-blue-50 border-blue-200",       text: "text-blue-700",    fallback: { usd: 0.45,   usd_24h_change: -0.8 } },
+  { id: "avalanche-2",       symbol: "AVAX", name: "Avalanche",    bg: "bg-red-50 border-red-100",         text: "text-red-600",     fallback: { usd: 36.00,  usd_24h_change: 1.5  } },
+  { id: "matic-network",     symbol: "MATIC",name: "Polygon",      bg: "bg-purple-50 border-purple-100",   text: "text-purple-600",  fallback: { usd: 0.58,   usd_24h_change: 0.9  } },
+  { id: "chainlink",         symbol: "LINK", name: "Chainlink",    bg: "bg-blue-50 border-blue-300",       text: "text-blue-800",    fallback: { usd: 14.20,  usd_24h_change: 1.3  } },
+  { id: "polkadot",          symbol: "DOT",  name: "Polkadot",     bg: "bg-pink-50 border-pink-100",       text: "text-pink-600",    fallback: { usd: 6.80,   usd_24h_change: -0.7 } },
+  { id: "litecoin",          symbol: "LTC",  name: "Litecoin",     bg: "bg-slate-50 border-slate-200",     text: "text-slate-600",   fallback: { usd: 82.00,  usd_24h_change: 0.4  } },
+  { id: "uniswap",           symbol: "UNI",  name: "Uniswap",      bg: "bg-pink-50 border-pink-200",       text: "text-pink-700",    fallback: { usd: 7.40,   usd_24h_change: 2.1  } },
+  { id: "shiba-inu",         symbol: "SHIB", name: "Shiba Inu",    bg: "bg-orange-50 border-orange-200",   text: "text-orange-700",  fallback: { usd: 0.000018, usd_24h_change: 3.5 } },
 ];
 
 const STOCK_LIST = [
@@ -679,10 +685,16 @@ function AssetsTab({ dashData }: { dashData: any }) {
         <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold mb-2">Global Markets</p>
         <h2 className="text-3xl font-bold font-display">{CRYPTO_LIST.length + STOCK_LIST.length + COMMODITY_LIST.length} Assets</h2>
         <p className="text-white/50 text-sm mt-1">Crypto · Stocks · Commodities tracked</p>
-        <div className="flex gap-3 mt-4 text-[10px] font-semibold">
-          <span className="px-2.5 py-1 rounded-full bg-white/10">🪙 {CRYPTO_LIST.length} Crypto</span>
-          <span className="px-2.5 py-1 rounded-full bg-white/10">📈 {STOCK_LIST.length} Stocks</span>
-          <span className="px-2.5 py-1 rounded-full bg-white/10">🥇 {COMMODITY_LIST.length} Commodities</span>
+        <div className="flex gap-2.5 mt-4 text-[10px] font-semibold flex-wrap">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10">
+            <Coins className="w-3 h-3" /> {CRYPTO_LIST.length} Crypto
+          </span>
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10">
+            <LineChart className="w-3 h-3" /> {STOCK_LIST.length} Stocks
+          </span>
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10">
+            <Flame className="w-3 h-3" /> {COMMODITY_LIST.length} Commodities
+          </span>
         </div>
       </div>
 
@@ -923,7 +935,7 @@ export default function Dashboard() {
   })();
 
   const navItems = [
-    { id: "overview",      icon: BarChart3,      label: "Welcome" },
+    { id: "overview",      icon: BarChart3,      label: "Home" },
     { id: "portfolio",     icon: PieChartIcon,   label: "Portfolio" },
     { id: "assets",        icon: Gem,            label: "Assets" },
     { id: "invest",        icon: Package,        label: "Invest" },
@@ -1075,21 +1087,27 @@ export default function Dashboard() {
                   {/* Quick stats */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {[
-                      { label: "Balance",    value: `₦${balance.toLocaleString()}`,                                                icon: Wallet,    sub: "available" },
-                      { label: "Invested",   value: `₦${parseFloat(dashData?.investments?.total_invested || 0).toLocaleString()}`, icon: TrendingUp, sub: `${dashData?.investments?.active_count || 0} active` },
-                      { label: "Earned",     value: `₦${parseFloat(dashData?.investments?.total_earned || 0).toLocaleString()}`,   icon: DollarSign, sub: "total returns" },
-                      { label: "Referrals",  value: String(dashData?.referrals?.referred_users || 0),                              icon: Zap,        sub: `₦${parseFloat(dashData?.referrals?.earnings || 0).toLocaleString()} earned` },
-                    ].map(({ label, value, icon: Icon, sub }) => (
-                      <motion.div key={label} whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                        className="bg-card border border-border rounded-2xl p-4">
-                        <div className="flex items-center justify-between mb-2.5">
-                          <span className="text-[11px] text-muted-foreground font-medium">{label}</span>
-                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Icon className="w-3.5 h-3.5 text-primary" />
+                      { label: "Balance",   value: `₦${balance.toLocaleString()}`,                                                 icon: Wallet,     sub: "available",    accent: "from-primary/10 to-primary/5",     iconBg: "bg-primary/15",     iconColor: "text-primary" },
+                      { label: "Invested",  value: `₦${parseFloat(dashData?.investments?.total_invested || 0).toLocaleString()}`,  icon: TrendingUp,  sub: `${dashData?.investments?.active_count || 0} active`,  accent: "from-blue-50 to-blue-50/30",       iconBg: "bg-blue-100",       iconColor: "text-blue-600" },
+                      { label: "Earned",    value: `₦${parseFloat(dashData?.investments?.total_earned || 0).toLocaleString()}`,    icon: DollarSign,  sub: "total returns", accent: "from-emerald-50 to-emerald-50/30", iconBg: "bg-emerald-100",    iconColor: "text-emerald-600" },
+                      { label: "Referrals", value: String(dashData?.referrals?.referred_users || 0),                               icon: Zap,         sub: `₦${parseFloat(dashData?.referrals?.earnings || 0).toLocaleString()} earned`, accent: "from-amber-50 to-amber-50/30", iconBg: "bg-amber-100", iconColor: "text-amber-600" },
+                    ].map(({ label, value, icon: Icon, sub, accent, iconBg, iconColor }) => (
+                      <motion.div key={label}
+                        whileHover={{ y: -2, boxShadow: "0 8px 24px -4px rgba(0,0,0,0.08)" }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        className={`bg-gradient-to-br ${accent} border border-border rounded-2xl p-4 relative overflow-hidden`}>
+                        <div className="absolute inset-0 opacity-40 pointer-events-none"
+                          style={{ background: "radial-gradient(ellipse at top right, currentColor 0%, transparent 70%)" }} />
+                        <div className="relative">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-[11px] text-muted-foreground font-semibold tracking-wide uppercase">{label}</span>
+                            <div className={`w-8 h-8 rounded-xl ${iconBg} flex items-center justify-center`}>
+                              <Icon className={`w-4 h-4 ${iconColor}`} />
+                            </div>
                           </div>
+                          <div className="font-bold text-foreground text-[17px] leading-tight tracking-tight">{value}</div>
+                          <div className="text-[10px] text-muted-foreground mt-1.5 font-medium">{sub}</div>
                         </div>
-                        <div className="font-bold text-foreground text-lg leading-tight">{value}</div>
-                        <div className="text-[10px] text-muted-foreground mt-1">{sub}</div>
                       </motion.div>
                     ))}
                   </div>

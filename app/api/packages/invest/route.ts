@@ -6,6 +6,13 @@ import { Transaction } from '@/lib/models/Transaction';
 import { User } from '@/lib/models/User';
 import { verifyToken } from '@/lib/server-auth';
 
+function getReferralRate(commissionCount: number): number {
+  if (commissionCount === 0) return 0.50;
+  if (commissionCount === 1) return 0.25;
+  if (commissionCount === 2) return 0.10;
+  return 0.05;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const userId = verifyToken(req);
@@ -48,13 +55,22 @@ export async function POST(req: NextRequest) {
     });
 
     if (user.referred_by) {
-      const commission = parseFloat(pkg.price) * 0.05;
-      await User.findByIdAndUpdate(user.referred_by, { $inc: { balance: commission, referral_earnings: commission } });
+      const existingCommissions = await Transaction.countDocuments({
+        user_id: user.referred_by,
+        type: 'referral_bonus',
+      });
+      const rate = getReferralRate(existingCommissions);
+      const commission = parseFloat(pkg.price) * rate;
+      const pct = Math.round(rate * 100);
+
+      await User.findByIdAndUpdate(user.referred_by, {
+        $inc: { balance: commission, referral_earnings: commission },
+      });
       await Transaction.create({
         user_id: user.referred_by,
         type: 'referral_bonus',
         amount: commission,
-        description: `5% referral commission from ${user.username}'s investment`,
+        description: `${pct}% referral commission from ${user.username}'s investment`,
         status: 'completed',
       });
     }

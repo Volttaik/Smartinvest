@@ -10,10 +10,12 @@ export async function GET() {
       id: p._id,
       name: p.name,
       price: p.price,
+      min_amount: p.price,
       daily_return_pct: p.daily_return_pct,
       duration_days: p.duration_days,
       total_roi: p.total_roi,
       tier: p.tier,
+      description: `${p.daily_return_pct}% daily for ${p.duration_days} days · ${p.total_roi.toFixed(1)}% total ROI`,
     })));
   } catch (err: any) {
     return NextResponse.json({ error: 'Failed to fetch packages' }, { status: 500 });

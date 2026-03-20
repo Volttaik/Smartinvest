@@ -40,110 +40,85 @@ type Tab = "overview" | "invest" | "transactions" | "referrals" | "fund" | "with
 declare const PaystackPop: any;
 
 /* ─────────────────────────────────────────
-   LIVE MARKET PRICE CHART
+   PROFIT & LOSS CHART
 ───────────────────────────────────────── */
-function MarketPriceChart() {
-  const [priceData, setPriceData] = useState<{ time: string; btc: number; eth: number }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeCoin, setActiveCoin] = useState<"btc" | "eth">("btc");
-
-  useEffect(() => {
-    const fetchPrices = async () => {
-      try {
-        const res = await fetch(
-          "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=daily",
-          { cache: "no-store" }
-        );
-        const ethRes = await fetch(
-          "https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=7&interval=daily",
-          { cache: "no-store" }
-        );
-        if (res.ok && ethRes.ok) {
-          const btcJson = await res.json();
-          const ethJson = await ethRes.json();
-          const combined = btcJson.prices.slice(-7).map((p: number[], i: number) => ({
-            time: new Date(p[0]).toLocaleDateString("en", { weekday: "short" }),
-            btc: Math.round(p[1]),
-            eth: Math.round((ethJson.prices[i] || [0, 0])[1]),
-          }));
-          setPriceData(combined);
-        }
-      } catch {
-        const now = Date.now();
-        const mock = Array.from({ length: 7 }, (_, i) => ({
-          time: new Date(now - (6 - i) * 86400000).toLocaleDateString("en", { weekday: "short" }),
-          btc: 65000 + Math.sin(i) * 2000 + Math.random() * 1000,
-          eth: 3200 + Math.sin(i + 1) * 150 + Math.random() * 80,
-        }));
-        setPriceData(mock);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPrices();
-  }, []);
-
-  const latest = priceData[priceData.length - 1];
-  const prev = priceData[priceData.length - 2];
-  const change = latest && prev
-    ? (((latest[activeCoin] - prev[activeCoin]) / prev[activeCoin]) * 100).toFixed(2)
-    : "0.00";
-  const isUp = parseFloat(change) >= 0;
+function PnLChart({ chartData, totalEarned, totalInvested }: {
+  chartData: { month: string; earnings: number; invested: number }[];
+  totalEarned: number;
+  totalInvested: number;
+}) {
+  const [view, setView] = useState<"earnings" | "pnl">("earnings");
+  const pnlData = chartData.map((d, i) => {
+    const cumEarned = chartData.slice(0, i + 1).reduce((s, x) => s + x.earnings, 0);
+    const cumInvested = chartData.slice(0, i + 1).reduce((s, x) => s + x.invested, 0);
+    return { ...d, pnl: cumEarned - cumInvested };
+  });
+  const displayData = view === "earnings" ? chartData : pnlData;
+  const dataKey = view === "earnings" ? "earnings" : "pnl";
+  const latestVal = displayData[displayData.length - 1]?.[dataKey] ?? 0;
+  const prevVal = displayData[displayData.length - 2]?.[dataKey] ?? 0;
+  const isUp = latestVal >= prevVal;
+  const changePct = prevVal !== 0 ? (((latestVal - prevVal) / Math.abs(prevVal)) * 100).toFixed(1) : "0.0";
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="font-semibold text-sm text-foreground">Market Prices</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Live crypto market data</p>
+          <h3 className="font-semibold text-sm text-foreground">Your Profit & Loss</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Based on your investment activity</p>
         </div>
         <div className="flex gap-1.5">
-          {(["btc", "eth"] as const).map(c => (
-            <button key={c} onClick={() => setActiveCoin(c)}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all uppercase
-                ${activeCoin === c ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
-              {c}
+          {(["earnings", "pnl"] as const).map(v => (
+            <button key={v} onClick={() => setView(v)}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all capitalize
+                ${view === v ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
+              {v === "earnings" ? "Returns" : "P&L"}
             </button>
           ))}
         </div>
       </div>
 
-      {loading ? (
-        <div className="h-[160px] flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      {chartData.length === 0 ? (
+        <div className="h-[160px] flex flex-col items-center justify-center text-muted-foreground">
+          <BarChart3 className="w-8 h-8 mb-2 opacity-20" />
+          <p className="text-sm">P&L chart appears after your first investment</p>
         </div>
       ) : (
         <>
           <div className="flex items-baseline gap-2 mb-3">
-            <span className="text-2xl font-bold text-foreground">
-              ${latest?.[activeCoin]?.toLocaleString()}
+            <span className={`text-2xl font-bold ${latestVal >= 0 ? "text-foreground" : "text-red-500"}`}>
+              ₦{Math.abs(latestVal).toLocaleString()}
             </span>
             <span className={`text-sm font-semibold flex items-center gap-0.5 ${isUp ? "text-emerald-600" : "text-red-500"}`}>
               {isUp ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-              {isUp ? "+" : ""}{change}%
+              {isUp ? "+" : ""}{changePct}%
             </span>
-            <span className="text-xs text-muted-foreground">7d</span>
+            <span className="text-xs text-muted-foreground">vs last month</span>
           </div>
           <ResponsiveContainer width="100%" height={140}>
-            <AreaChart data={priceData}>
+            <AreaChart data={displayData}>
               <defs>
-                <linearGradient id="price-grad" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="pnl-grad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0.3} />
                   <stop offset="100%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="time" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false}
-                tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
+                tickFormatter={v => `₦${(v / 1000).toFixed(0)}k`} />
               <Tooltip
-                formatter={(v: any) => [`$${parseFloat(v).toLocaleString()}`, activeCoin.toUpperCase()]}
+                formatter={(v: any) => [`₦${parseFloat(v).toLocaleString()}`, view === "earnings" ? "Returns" : "Net P&L"]}
                 contentStyle={{ borderRadius: 10, border: "1px solid hsl(var(--border))", fontSize: 11 }} />
-              <Area type="monotone" dataKey={activeCoin}
+              <Area type="monotone" dataKey={dataKey}
                 stroke={isUp ? "#10b981" : "#ef4444"}
-                fill="url(#price-grad)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                fill="url(#pnl-grad)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
             </AreaChart>
           </ResponsiveContainer>
+          <div className="flex justify-between text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
+            <span>Total Earned: <span className="text-emerald-600 font-semibold">₦{totalEarned.toLocaleString()}</span></span>
+            <span>Total Invested: <span className="text-foreground font-semibold">₦{totalInvested.toLocaleString()}</span></span>
+          </div>
         </>
       )}
     </div>
@@ -613,42 +588,87 @@ function PortfolioTab({ dashData, balance }: { dashData: any; balance: number })
 /* ─────────────────────────────────────────
    ASSETS TAB
 ───────────────────────────────────────── */
-const ASSET_LIST = [
-  { symbol: "BTC", name: "Bitcoin", color: "#f97316", bg: "bg-orange-50 border-orange-100", text: "text-orange-600" },
-  { symbol: "ETH", name: "Ethereum", color: "#8b5cf6", bg: "bg-violet-50 border-violet-100", text: "text-violet-600" },
-  { symbol: "BNB", name: "BNB", color: "#eab308", bg: "bg-yellow-50 border-yellow-100", text: "text-yellow-600" },
-  { symbol: "SOL", name: "Solana", color: "#10b981", bg: "bg-emerald-50 border-emerald-100", text: "text-emerald-600" },
-  { symbol: "USDT", name: "Tether", color: "#3b82f6", bg: "bg-blue-50 border-blue-100", text: "text-blue-600" },
+const CRYPTO_LIST = [
+  { id: "bitcoin",       symbol: "BTC",  name: "Bitcoin",    bg: "bg-orange-50 border-orange-100",  text: "text-orange-600",  fallback: { usd: 65000, usd_24h_change: 2.4  } },
+  { id: "ethereum",      symbol: "ETH",  name: "Ethereum",   bg: "bg-violet-50 border-violet-100",  text: "text-violet-600",  fallback: { usd: 3200,  usd_24h_change: 1.8  } },
+  { id: "binancecoin",   symbol: "BNB",  name: "BNB",        bg: "bg-yellow-50 border-yellow-100",  text: "text-yellow-600",  fallback: { usd: 580,   usd_24h_change: -0.5 } },
+  { id: "solana",        symbol: "SOL",  name: "Solana",     bg: "bg-emerald-50 border-emerald-100",text: "text-emerald-600", fallback: { usd: 155,   usd_24h_change: 3.2  } },
+  { id: "tether",        symbol: "USDT", name: "Tether",     bg: "bg-blue-50 border-blue-100",      text: "text-blue-600",    fallback: { usd: 1.0,   usd_24h_change: 0.01 } },
+  { id: "ripple",        symbol: "XRP",  name: "XRP",        bg: "bg-sky-50 border-sky-100",         text: "text-sky-600",     fallback: { usd: 0.60,  usd_24h_change: 1.1  } },
+  { id: "dogecoin",      symbol: "DOGE", name: "Dogecoin",   bg: "bg-amber-50 border-amber-100",    text: "text-amber-600",   fallback: { usd: 0.14,  usd_24h_change: 2.5  } },
+  { id: "cardano",       symbol: "ADA",  name: "Cardano",    bg: "bg-blue-50 border-blue-200",      text: "text-blue-700",    fallback: { usd: 0.45,  usd_24h_change: -0.8 } },
+  { id: "avalanche-2",   symbol: "AVAX", name: "Avalanche",  bg: "bg-red-50 border-red-100",        text: "text-red-600",     fallback: { usd: 36.00, usd_24h_change: 1.5  } },
+  { id: "matic-network", symbol: "MATIC",name: "Polygon",    bg: "bg-purple-50 border-purple-100",  text: "text-purple-600",  fallback: { usd: 0.58,  usd_24h_change: 0.9  } },
+];
+
+const STOCK_LIST = [
+  { symbol: "TSLA",  name: "Tesla Inc.",      category: "EV / Tech",    bg: "bg-red-50 border-red-100",      text: "text-red-600"    },
+  { symbol: "AAPL",  name: "Apple Inc.",      category: "Technology",   bg: "bg-gray-50 border-gray-200",    text: "text-gray-700"   },
+  { symbol: "MSFT",  name: "Microsoft",       category: "Technology",   bg: "bg-blue-50 border-blue-100",    text: "text-blue-600"   },
+  { symbol: "GOOGL", name: "Alphabet Inc.",   category: "Technology",   bg: "bg-emerald-50 border-emerald-100", text: "text-emerald-600" },
+  { symbol: "NVDA",  name: "NVIDIA Corp.",    category: "Semiconductors",bg: "bg-green-50 border-green-100", text: "text-green-600"  },
+  { symbol: "AMZN",  name: "Amazon.com",      category: "E-Commerce",   bg: "bg-orange-50 border-orange-100",text: "text-orange-600" },
+];
+
+const COMMODITY_LIST = [
+  { symbol: "GC=F", name: "Gold",       category: "Precious Metal", bg: "bg-yellow-50 border-yellow-200", text: "text-yellow-700" },
+  { symbol: "SI=F", name: "Silver",     category: "Precious Metal", bg: "bg-slate-50 border-slate-200",   text: "text-slate-600"  },
+  { symbol: "CL=F", name: "Crude Oil",  category: "Energy",         bg: "bg-zinc-50 border-zinc-200",     text: "text-zinc-700"   },
 ];
 
 function AssetsTab({ dashData }: { dashData: any }) {
-  const [prices, setPrices] = useState<Record<string, { usd: number; usd_24h_change: number }>>({});
+  const [cryptoPrices, setCryptoPrices] = useState<Record<string, { usd: number; usd_24h_change: number }>>({});
+  const [marketData, setMarketData] = useState<Record<string, { price: number; change: number; name: string }>>({});
   const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState<"crypto" | "stocks" | "commodities">("crypto");
   const allocation = dashData?.allocation || [];
 
   useEffect(() => {
-    fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin,solana,tether&vs_currencies=usd&include_24hr_change=true")
-      .then(r => r.json())
-      .then(data => {
-        setPrices({
-          BTC: data.bitcoin,
-          ETH: data.ethereum,
-          BNB: data.binancecoin,
-          SOL: data.solana,
-          USDT: data.tether,
-        });
-      })
-      .catch(() => {
-        setPrices({
-          BTC: { usd: 65000, usd_24h_change: 2.4 },
-          ETH: { usd: 3200,  usd_24h_change: 1.8 },
-          BNB: { usd: 580,   usd_24h_change: -0.5 },
-          SOL: { usd: 155,   usd_24h_change: 3.2 },
-          USDT: { usd: 1.0,  usd_24h_change: 0.01 },
-        });
-      })
-      .finally(() => setLoading(false));
+    const ids = CRYPTO_LIST.map(c => c.id).join(",");
+    const fallback: Record<string, { usd: number; usd_24h_change: number }> = {};
+    CRYPTO_LIST.forEach(c => { fallback[c.symbol] = c.fallback; });
+
+    Promise.all([
+      fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`)
+        .then(r => r.json())
+        .then(data => {
+          const map: Record<string, { usd: number; usd_24h_change: number }> = {};
+          CRYPTO_LIST.forEach(c => { if (data[c.id]) map[c.symbol] = data[c.id]; else map[c.symbol] = c.fallback; });
+          setCryptoPrices(map);
+        })
+        .catch(() => setCryptoPrices(fallback)),
+      fetch("/api/market")
+        .then(r => r.json())
+        .then(setMarketData)
+        .catch(() => {}),
+    ]).finally(() => setLoading(false));
   }, []);
+
+  const renderRow = (symbol: string, name: string, bg: string, text: string, price: number | undefined, change: number | undefined, currency?: string) => {
+    const isUp = (change ?? 0) >= 0;
+    return (
+      <motion.div key={symbol} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        className="flex items-center gap-4 px-4 py-3.5 hover:bg-muted/20 transition-colors">
+        <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${bg}`}>
+          <span className={`text-[10px] font-bold ${text}`}>{symbol.replace("=F","").slice(0,4)}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold">{name}</p>
+          <p className="text-xs text-muted-foreground">{symbol}</p>
+        </div>
+        {price !== undefined ? (
+          <div className="text-right">
+            <p className="text-sm font-bold">{currency ?? "$"}{price.toLocaleString()}</p>
+            <p className={`text-xs font-semibold ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+              {isUp ? "+" : ""}{(change ?? 0).toFixed(2)}%
+            </p>
+          </div>
+        ) : (
+          <div className="w-16 h-8 bg-muted rounded animate-pulse" />
+        )}
+      </motion.div>
+    );
+  };
 
   return (
     <motion.div key="assets-tab"
@@ -656,14 +676,19 @@ function AssetsTab({ dashData }: { dashData: any }) {
       transition={{ duration: 0.28 }} className="p-5 space-y-5">
 
       <div className="bg-gradient-to-br from-foreground to-foreground/90 rounded-3xl p-6 text-white">
-        <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold mb-2">Your Holdings</p>
-        <h2 className="text-3xl font-bold font-display">{allocation.length} Assets</h2>
-        <p className="text-white/50 text-sm mt-1">Diversified across investment packages</p>
+        <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold mb-2">Global Markets</p>
+        <h2 className="text-3xl font-bold font-display">{CRYPTO_LIST.length + STOCK_LIST.length + COMMODITY_LIST.length} Assets</h2>
+        <p className="text-white/50 text-sm mt-1">Crypto · Stocks · Commodities tracked</p>
+        <div className="flex gap-3 mt-4 text-[10px] font-semibold">
+          <span className="px-2.5 py-1 rounded-full bg-white/10">🪙 {CRYPTO_LIST.length} Crypto</span>
+          <span className="px-2.5 py-1 rounded-full bg-white/10">📈 {STOCK_LIST.length} Stocks</span>
+          <span className="px-2.5 py-1 rounded-full bg-white/10">🥇 {COMMODITY_LIST.length} Commodities</span>
+        </div>
       </div>
 
       {allocation.length > 0 && (
         <div className="bg-card border border-border rounded-2xl p-5">
-          <h3 className="font-semibold text-sm mb-4">Portfolio Allocation</h3>
+          <h3 className="font-semibold text-sm mb-4">Your Portfolio Allocation</h3>
           <div className="space-y-3">
             {allocation.map((a: any, i: number) => {
               const total = allocation.reduce((s: number, x: any) => s + parseFloat(x.value), 0);
@@ -694,38 +719,33 @@ function AssetsTab({ dashData }: { dashData: any }) {
       )}
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
-          <h3 className="font-semibold text-sm">Market Prices</h3>
-          {loading && <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
+        <div className="p-4 border-b border-border bg-muted/30">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm">Live Market Prices</h3>
+            {loading && <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
+          </div>
+          <div className="flex gap-2">
+            {(["crypto", "stocks", "commodities"] as const).map(s => (
+              <button key={s} onClick={() => setActiveSection(s)}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold capitalize transition-all
+                  ${activeSection === s ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="divide-y divide-border">
-          {ASSET_LIST.map(({ symbol, name, bg, text }) => {
-            const p = prices[symbol];
-            const change = p?.usd_24h_change ?? 0;
-            const isUp = change >= 0;
-            return (
-              <motion.div key={symbol}
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="flex items-center gap-4 px-4 py-3.5 hover:bg-muted/20 transition-colors">
-                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${bg}`}>
-                  <span className={`text-xs font-bold ${text}`}>{symbol.slice(0, 3)}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold">{name}</p>
-                  <p className="text-xs text-muted-foreground">{symbol}</p>
-                </div>
-                {p ? (
-                  <div className="text-right">
-                    <p className="text-sm font-bold">${p.usd.toLocaleString()}</p>
-                    <p className={`text-xs font-semibold ${isUp ? "text-emerald-600" : "text-red-500"}`}>
-                      {isUp ? "+" : ""}{change.toFixed(2)}%
-                    </p>
-                  </div>
-                ) : (
-                  <div className="w-16 h-8 bg-muted rounded animate-pulse" />
-                )}
-              </motion.div>
-            );
+          {activeSection === "crypto" && CRYPTO_LIST.map(({ symbol, name, bg, text }) => {
+            const p = cryptoPrices[symbol];
+            return renderRow(symbol, name, bg, text, p?.usd, p?.usd_24h_change);
+          })}
+          {activeSection === "stocks" && STOCK_LIST.map(({ symbol, name, bg, text }) => {
+            const d = marketData[symbol];
+            return renderRow(symbol, name, bg, text, d?.price, d?.change);
+          })}
+          {activeSection === "commodities" && COMMODITY_LIST.map(({ symbol, name, bg, text }) => {
+            const d = marketData[symbol];
+            return renderRow(symbol, name, bg, text, d?.price, d?.change);
           })}
         </div>
       </div>
@@ -895,6 +915,13 @@ export default function Dashboard() {
   const tiers = ["All", ...Array.from(new Set(packages.map((p: any) => p.tier)))];
   const filteredPkgs = tierFilter === "All" ? packages : packages.filter((p: any) => p.tier === tierFilter);
 
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    return "Good evening";
+  })();
+
   const navItems = [
     { id: "overview",      icon: BarChart3,      label: "Welcome" },
     { id: "portfolio",     icon: PieChartIcon,   label: "Portfolio" },
@@ -991,7 +1018,7 @@ export default function Dashboard() {
             </button>
             <div>
               <h1 className="font-display font-bold text-base text-foreground leading-tight">
-                {activeTab === "overview" ? `Welcome, ${user?.username || 'investor'}` : currentNav?.label}
+                {activeTab === "overview" ? `${greeting}, ${user?.username || 'investor'}` : currentNav?.label}
               </h1>
               <p className="text-[11px] text-muted-foreground hidden sm:block">
                 {activeTab === "overview" ? "Here's your investment summary" : "SmartInvest Platform"}
@@ -1016,6 +1043,10 @@ export default function Dashboard() {
             <button className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               <Bell className="w-4 h-4" />
             </button>
+            <div className="flex items-center gap-2 pl-1 border-l border-border ml-1">
+              <AvatarIcon picture={user?.profile_picture} />
+              <span className="hidden sm:block text-xs font-semibold text-foreground truncate max-w-[80px]">{user?.username}</span>
+            </div>
           </div>
         </header>
 
@@ -1119,7 +1150,7 @@ export default function Dashboard() {
                             <div className="text-[10px] text-muted-foreground">Earned</div>
                           </div>
                         </div>
-                        <p className="text-[10px] text-muted-foreground text-center">5% commission on every referral investment</p>
+                        <p className="text-[10px] text-muted-foreground text-center">50% · 25% · 10% · 5% tiered commissions</p>
                       </div>
                       <Button size="sm" onClick={() => setActiveTab("fund")} className="w-full bg-primary text-white rounded-xl mt-3">
                         Fund Wallet
@@ -1127,8 +1158,12 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Live market chart */}
-                  <MarketPriceChart />
+                  {/* Profit & Loss chart */}
+                  <PnLChart
+                    chartData={dashData?.chartData || []}
+                    totalEarned={parseFloat(dashData?.investments?.total_earned || 0)}
+                    totalInvested={parseFloat(dashData?.investments?.total_invested || 0)}
+                  />
 
                   {/* Active Investments */}
                   <div className="bg-card border border-border rounded-2xl p-5">
@@ -1426,8 +1461,8 @@ export default function Dashboard() {
 
                   <div className="bg-gradient-to-br from-foreground to-foreground/90 rounded-3xl p-6 text-white">
                     <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold mb-3">Referral Program</p>
-                    <h2 className="text-3xl font-bold font-display mb-1">Earn 5% Commission</h2>
-                    <p className="text-white/60 text-sm">For every friend you refer who invests</p>
+                    <h2 className="text-3xl font-bold font-display mb-1">Up to 50% Commission</h2>
+                    <p className="text-white/60 text-sm">Tiered rewards for every referral who invests</p>
                     <div className="mt-5 p-3.5 rounded-2xl bg-white/8 border border-white/15">
                       <p className="text-white/50 text-[10px] uppercase tracking-wider mb-1.5">Your Referral Code</p>
                       <div className="flex items-center gap-3">
@@ -1459,9 +1494,9 @@ export default function Dashboard() {
                     <h3 className="font-semibold text-sm mb-4">How It Works</h3>
                     <div className="space-y-4">
                       {[
-                        { step: "1", title: "Share your code", desc: "Send your referral code to friends" },
-                        { step: "2", title: "They register", desc: "They create an account with your code" },
-                        { step: "3", title: "They invest", desc: "When they invest, you earn 5% commission" },
+                        { step: "1", title: "Share your code", desc: "Send your referral code to friends and family" },
+                        { step: "2", title: "They register", desc: "They create an account using your referral code" },
+                        { step: "3", title: "They invest", desc: "1st referral → 50% · 2nd → 25% · 3rd → 10% · 4th+ → 5%" },
                         { step: "4", title: "Instant payout", desc: "Commission is credited to your wallet immediately" },
                       ].map(({ step, title, desc }) => (
                         <div key={step} className="flex gap-4">

@@ -5,53 +5,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import SuccessOverlay from "@/components/SuccessOverlay";
-import { Eye, EyeOff, ArrowRight, BarChart3, Shield, Globe2, RefreshCw } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, BarChart3, Shield, Globe2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { login as apiLogin, getCaptcha } from "@/lib/api";
+import { login as apiLogin } from "@/lib/api";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ email: "", password: "", captchaInput: "" });
-  const [captcha, setCaptcha] = useState<{ sessionKey: string; code: string } | null>(null);
-  const [captchaLoading, setCaptchaLoading] = useState(false);
+  const [form, setForm] = useState({ email: "", password: "" });
   const navigate = useNavigate();
   const auth = useAuth();
-
-  const fetchCaptcha = async () => {
-    setCaptchaLoading(true);
-    try {
-      const data = await getCaptcha();
-      setCaptcha(data);
-      setForm(f => ({ ...f, captchaInput: "" }));
-    } catch {
-      setError("Failed to load verification code. Check server connection.");
-    } finally {
-      setCaptchaLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchCaptcha(); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!captcha) { setError("Please wait for the verification code."); return; }
     setLoading(true);
     try {
       const data = await apiLogin({
         email: form.email,
         password: form.password,
-        captchaKey: captcha.sessionKey,
-        captchaCode: form.captchaInput,
       });
       auth.login(data.token, data.user);
       setSuccess(true);
     } catch (err: any) {
       setError(err.response?.data?.error || "Login failed. Please try again.");
-      fetchCaptcha();
     } finally {
       setLoading(false);
     }
@@ -139,35 +118,6 @@ export default function Login() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Security Verification</Label>
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 border border-border">
-                  <div className="flex-1">
-                    {captchaLoading ? (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        Loading code...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Enter code:</span>
-                        <span className="font-mono text-2xl font-bold tracking-[0.4em] text-primary select-none">
-                          {captcha?.code}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <button type="button" onClick={fetchCaptcha} disabled={captchaLoading}
-                    className="text-muted-foreground hover:text-primary transition-colors" title="Refresh code">
-                    <RefreshCw className={`w-4 h-4 ${captchaLoading ? 'animate-spin' : ''}`} />
-                  </button>
-                </div>
-                <Input placeholder="Type the 4-digit code shown above"
-                  value={form.captchaInput}
-                  onChange={e => setForm(f => ({ ...f, captchaInput: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
-                  maxLength={4} className="h-11 rounded-xl font-mono text-center text-lg tracking-[0.5em]" required />
               </div>
 
               <Button type="submit" disabled={loading}

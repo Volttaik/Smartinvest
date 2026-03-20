@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import SuccessOverlay from "@/components/SuccessOverlay";
-import { Eye, EyeOff, ArrowRight, Check, RefreshCw, Camera, TrendingUp, Shield, Zap, User } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Check, Camera, TrendingUp, Shield, Zap, User } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { register as apiRegister, getCaptcha } from "@/lib/api";
+import { register as apiRegister } from "@/lib/api";
 
 const steps = ["Account Info", "Security", "Photo", "Confirm"];
 
@@ -26,31 +26,14 @@ export default function Register() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [agreed, setAgreed] = useState(false);
-  const [captcha, setCaptcha] = useState<{ sessionKey: string; code: string } | null>(null);
-  const [captchaLoading, setCaptchaLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     username: "", email: "", password: "", confirmPassword: "",
-    referralCode: "", profilePicture: "", captchaInput: "",
+    referralCode: "", profilePicture: "",
   });
   const navigate = useNavigate();
   const auth = useAuth();
-
-  const fetchCaptcha = async () => {
-    setCaptchaLoading(true);
-    try {
-      const data = await getCaptcha();
-      setCaptcha(data);
-      setForm(f => ({ ...f, captchaInput: "" }));
-    } catch {
-      setError("Failed to load verification code.");
-    } finally {
-      setCaptchaLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchCaptcha(); }, []);
 
   const goNext = () => {
     setError("");
@@ -97,7 +80,6 @@ export default function Register() {
     e.preventDefault();
     setError("");
     if (!agreed) { setError("Please accept the Terms & Conditions to continue."); return; }
-    if (!captcha) { setError("Please wait for the verification code."); return; }
     setLoading(true);
     try {
       const data = await apiRegister({
@@ -106,14 +88,11 @@ export default function Register() {
         password: form.password,
         profilePicture: form.profilePicture || "default",
         referralCode: form.referralCode || undefined,
-        captchaKey: captcha.sessionKey,
-        captchaCode: form.captchaInput,
       });
       auth.login(data.token, data.user);
       setSuccess(true);
     } catch (err: any) {
       setError(err.response?.data?.error || "Registration failed. Please try again.");
-      fetchCaptcha();
     } finally {
       setLoading(false);
     }
@@ -416,33 +395,6 @@ export default function Register() {
                           </div>
                         ))}
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Security Verification</Label>
-                      <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 border border-border">
-                        <div className="flex-1">
-                          {captchaLoading ? (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                              Loading...
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">Enter code:</span>
-                              <span className="font-mono text-2xl font-bold tracking-[0.4em] text-primary select-none">{captcha?.code}</span>
-                            </div>
-                          )}
-                        </div>
-                        <button type="button" onClick={fetchCaptcha} disabled={captchaLoading}
-                          className="text-muted-foreground hover:text-primary transition-colors">
-                          <RefreshCw className={`w-4 h-4 ${captchaLoading ? 'animate-spin' : ''}`} />
-                        </button>
-                      </div>
-                      <Input placeholder="Type the 4-digit code shown above"
-                        value={form.captchaInput}
-                        onChange={e => setForm(f => ({ ...f, captchaInput: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
-                        maxLength={4} className="h-11 rounded-xl font-mono text-center text-lg tracking-[0.5em]" required />
                     </div>
 
                     <div className="flex items-start gap-3">

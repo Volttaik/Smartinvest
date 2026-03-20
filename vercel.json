@@ -4,7 +4,7 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "env": {
-    "VITE_MONGODB_URI": "@vite_mongodb_uri",
+    "MONGODB_URI": "@mongodb_uri",
     "JWT_SECRET": "@jwt_secret",
     "PAYSTACK_SECRET_KEY": "@paystack_secret_key",
     "PAYSTACK_PUBLIC_KEY": "@paystack_public_key",

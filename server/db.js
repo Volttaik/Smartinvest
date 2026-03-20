@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-// Use VITE_MONGODB_URI from environment variables
-const MONGODB_URI = process.env.VITE_MONGODB_URI || process.env.MONGODB_URI;
+// Use MONGODB_URI from environment variables (server-side only)
+const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error('MongoDB URI is missing. Please set VITE_MONGODB_URI or MONGODB_URI in environment variables.');
+  throw new Error('MongoDB URI is missing. Please set MONGODB_URI in environment variables.');
 }
 
 const connectDB = async () => {

@@ -4,14 +4,14 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, useMotionValue, PanInfo } from "framer-motion";
 import {
   AreaChart, Area, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip,
-  PieChart, Pie, Cell
+  PieChart, Pie, Cell, LineChart, Line
 } from "recharts";
 import {
   TrendingUp, TrendingDown, LogOut, BarChart3, Wallet,
   ArrowUpRight, Activity, Menu,
   CreditCard, Zap, RefreshCw, Copy, Check, Package, AlertCircle,
   ChevronLeft, ChevronRight, Target, Layers, DollarSign, Bell,
-  ArrowDownLeft, Plus, Minus, Clock, Star,
+  ArrowDownLeft, Plus, Minus, Clock, Star, PieChartIcon, Gem,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,18 +36,129 @@ function AvatarIcon({ picture }: { picture?: string }) {
 }
 
 const PIE_COLORS = ["hsl(var(--primary))", "#3b82f6", "#10b981", "#8b5cf6", "#f97316"];
-type Tab = "overview" | "invest" | "transactions" | "referrals" | "fund" | "withdraw";
+type Tab = "overview" | "invest" | "transactions" | "referrals" | "fund" | "withdraw" | "portfolio" | "assets";
 declare const PaystackPop: any;
 
 /* ─────────────────────────────────────────
-   SWIPEABLE INVESTMENT CARD CAROUSEL
+   LIVE MARKET PRICE CHART
+───────────────────────────────────────── */
+function MarketPriceChart() {
+  const [priceData, setPriceData] = useState<{ time: string; btc: number; eth: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeCoin, setActiveCoin] = useState<"btc" | "eth">("btc");
+
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const res = await fetch(
+          "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=daily",
+          { cache: "no-store" }
+        );
+        const ethRes = await fetch(
+          "https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=7&interval=daily",
+          { cache: "no-store" }
+        );
+        if (res.ok && ethRes.ok) {
+          const btcJson = await res.json();
+          const ethJson = await ethRes.json();
+          const combined = btcJson.prices.slice(-7).map((p: number[], i: number) => ({
+            time: new Date(p[0]).toLocaleDateString("en", { weekday: "short" }),
+            btc: Math.round(p[1]),
+            eth: Math.round((ethJson.prices[i] || [0, 0])[1]),
+          }));
+          setPriceData(combined);
+        }
+      } catch {
+        const now = Date.now();
+        const mock = Array.from({ length: 7 }, (_, i) => ({
+          time: new Date(now - (6 - i) * 86400000).toLocaleDateString("en", { weekday: "short" }),
+          btc: 65000 + Math.sin(i) * 2000 + Math.random() * 1000,
+          eth: 3200 + Math.sin(i + 1) * 150 + Math.random() * 80,
+        }));
+        setPriceData(mock);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPrices();
+  }, []);
+
+  const latest = priceData[priceData.length - 1];
+  const prev = priceData[priceData.length - 2];
+  const change = latest && prev
+    ? (((latest[activeCoin] - prev[activeCoin]) / prev[activeCoin]) * 100).toFixed(2)
+    : "0.00";
+  const isUp = parseFloat(change) >= 0;
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="font-semibold text-sm text-foreground">Market Prices</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Live crypto market data</p>
+        </div>
+        <div className="flex gap-1.5">
+          {(["btc", "eth"] as const).map(c => (
+            <button key={c} onClick={() => setActiveCoin(c)}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all uppercase
+                ${activeCoin === c ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
+              {c}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="h-[160px] flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <>
+          <div className="flex items-baseline gap-2 mb-3">
+            <span className="text-2xl font-bold text-foreground">
+              ${latest?.[activeCoin]?.toLocaleString()}
+            </span>
+            <span className={`text-sm font-semibold flex items-center gap-0.5 ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+              {isUp ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+              {isUp ? "+" : ""}{change}%
+            </span>
+            <span className="text-xs text-muted-foreground">7d</span>
+          </div>
+          <ResponsiveContainer width="100%" height={140}>
+            <AreaChart data={priceData}>
+              <defs>
+                <linearGradient id="price-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0.3} />
+                  <stop offset="100%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="time" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false}
+                tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
+              <Tooltip
+                formatter={(v: any) => [`$${parseFloat(v).toLocaleString()}`, activeCoin.toUpperCase()]}
+                contentStyle={{ borderRadius: 10, border: "1px solid hsl(var(--border))", fontSize: 11 }} />
+              <Area type="monotone" dataKey={activeCoin}
+                stroke={isUp ? "#10b981" : "#ef4444"}
+                fill="url(#price-grad)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   SWIPEABLE INVESTMENT CARD CAROUSEL (Smoother)
 ───────────────────────────────────────── */
 function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
   dashData: any; user: any; balance: number;
   onFund: () => void; onInvest: () => void;
 }) {
   const [current, setCurrent] = useState(0);
-  const isDragging = useRef(false);
+  const [dragging, setDragging] = useState(false);
   const dragX = useMotionValue(0);
 
   const totalInvested = parseFloat(dashData?.investments?.total_invested || 0);
@@ -309,18 +420,21 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
   const goTo = (idx: number) => setCurrent(((idx % total) + total) % total);
 
   const handleDragEnd = (_: never, info: PanInfo) => {
-    if (isDragging.current) {
-      const threshold = 50;
-      if (info.offset.x < -threshold) goTo(current + 1);
-      else if (info.offset.x > threshold) goTo(current - 1);
+    const velocity = info.velocity.x;
+    const offset = info.offset.x;
+    if (Math.abs(velocity) > 400) {
+      if (velocity < 0) goTo(current + 1);
+      else goTo(current - 1);
+    } else if (Math.abs(offset) > 60) {
+      if (offset < 0) goTo(current + 1);
+      else goTo(current - 1);
     }
     dragX.set(0);
-    isDragging.current = false;
+    setDragging(false);
   };
 
   return (
     <div className="select-none">
-      {/* Card stack */}
       <div className="relative h-[220px]">
         {cards.map((card, i) => {
           const rawOffset = (i - current + total) % total;
@@ -332,10 +446,10 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
 
           let zIndex = 0, scale = 0.82, translateY = 0, opacity = 0;
 
-          if (isActive)  { zIndex = 30; scale = 1;    translateY = 0;  opacity = 1; }
-          else if (isBehind1) { zIndex = 20; scale = 0.93; translateY = 12; opacity = 0.65; }
-          else if (isBehind2) { zIndex = 10; scale = 0.86; translateY = 22; opacity = 0.35; }
-          else if (isPrev)    { zIndex = 20; scale = 0.93; translateY = 12; opacity = 0.65; }
+          if (isActive)       { zIndex = 30; scale = 1;    translateY = 0;  opacity = 1; }
+          else if (isBehind1) { zIndex = 20; scale = 0.94; translateY = 10; opacity = 0.7; }
+          else if (isBehind2) { zIndex = 10; scale = 0.87; translateY = 20; opacity = 0.4; }
+          else if (isPrev)    { zIndex = 20; scale = 0.94; translateY = 10; opacity = 0.7; }
           if (isHidden) opacity = 0;
 
           return (
@@ -344,21 +458,22 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
               className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${card.gradient} p-5 sm:p-6 border border-white/10 shadow-2xl cursor-grab active:cursor-grabbing`}
               style={{ zIndex, transformOrigin: "top center" }}
               animate={{ scale, translateY, opacity }}
-              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              transition={{ type: "spring", stiffness: 380, damping: 38, mass: 0.7 }}
               drag={isActive ? "x" : false}
               dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.18}
-              onDragStart={() => { isDragging.current = true; }}
+              dragElastic={0.12}
+              dragMomentum={false}
+              onDragStart={() => setDragging(true)}
               onDragEnd={handleDragEnd}
-              whileDrag={{ scale: 0.97, cursor: "grabbing" }}
+              whileDrag={{ scale: 0.975, cursor: "grabbing" }}
             >
               {card.content}
 
               {isActive && (
                 <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 flex gap-1.5">
                   {cards.map((_, di) => (
-                    <button key={di} onClick={() => setCurrent(di)}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${di === current ? 'w-4 bg-white' : 'w-1.5 bg-white/30'}`} />
+                    <button key={di} onClick={() => !dragging && setCurrent(di)}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${di === current ? 'w-5 bg-white' : 'w-1.5 bg-white/30 hover:bg-white/50'}`} />
                   ))}
                 </div>
               )}
@@ -367,7 +482,6 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
         })}
       </div>
 
-      {/* Nav arrows */}
       <div className="flex items-center justify-between mt-5 px-1">
         <button onClick={() => goTo(current - 1)}
           className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-muted/60 transition-colors">
@@ -375,7 +489,7 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
         </button>
         <div className="text-center">
           <p className="text-xs font-semibold text-foreground">{cards[current].label}</p>
-          <p className="text-[10px] text-muted-foreground">{current + 1} of {total} · Swipe to explore</p>
+          <p className="text-[10px] text-muted-foreground">{current + 1} of {total} · Swipe or tap arrows</p>
         </div>
         <button onClick={() => goTo(current + 1)}
           className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-muted/60 transition-colors">
@@ -383,6 +497,256 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
         </button>
       </div>
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   PORTFOLIO TAB
+───────────────────────────────────────── */
+function PortfolioTab({ dashData, balance }: { dashData: any; balance: number }) {
+  const totalInvested = parseFloat(dashData?.investments?.total_invested || 0);
+  const totalEarned   = parseFloat(dashData?.investments?.total_earned   || 0);
+  const activeCount   = dashData?.investments?.active_count || 0;
+  const allocation    = dashData?.allocation || [];
+  const roi = totalInvested > 0 ? ((totalEarned / totalInvested) * 100).toFixed(1) : "0.0";
+
+  return (
+    <motion.div key="portfolio-tab"
+      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.28 }} className="p-5 space-y-5">
+
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          { label: "Portfolio Value", value: `₦${balance.toLocaleString()}`, color: "text-foreground", bg: "bg-primary/10", icon: Wallet },
+          { label: "Total Invested", value: `₦${totalInvested.toLocaleString()}`, color: "text-blue-600", bg: "bg-blue-50 border-blue-100", icon: TrendingUp },
+          { label: "Total Earned", value: `₦${totalEarned.toLocaleString()}`, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100", icon: DollarSign },
+          { label: "ROI", value: `+${roi}%`, color: "text-violet-600", bg: "bg-violet-50 border-violet-100", icon: BarChart3 },
+        ].map(({ label, value, color, bg, icon: Icon }) => (
+          <div key={label} className="bg-card border border-border rounded-2xl p-4">
+            <div className={`w-9 h-9 rounded-xl border flex items-center justify-center mb-2.5 ${bg}`}>
+              <Icon className={`w-4 h-4 ${color}`} />
+            </div>
+            <div className={`text-xl font-bold ${color}`}>{value}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {allocation.length > 0 && (
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <h3 className="font-semibold text-sm mb-4">Asset Allocation</h3>
+          <div className="flex items-center gap-6">
+            <div className="w-32 h-32 shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={allocation} cx="50%" cy="50%" innerRadius={32} outerRadius={56} dataKey="value" paddingAngle={3}>
+                    {allocation.map((_: any, i: number) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 space-y-2">
+              {allocation.map((a: any, i: number) => (
+                <div key={a.name} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                    <span className="text-sm text-muted-foreground truncate max-w-[100px]">{a.name}</span>
+                  </div>
+                  <span className="text-sm font-semibold">₦{parseFloat(a.value).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-card border border-border rounded-2xl p-5">
+        <h3 className="font-semibold text-sm mb-4">Earnings History</h3>
+        {dashData?.chartData?.length > 0 ? (
+          <ResponsiveContainer width="100%" height={180}>
+            <AreaChart data={dashData.chartData}>
+              <defs>
+                <linearGradient id="port-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+              <Tooltip formatter={(v: any) => [`₦${parseFloat(v).toLocaleString()}`, "Earnings"]}
+                contentStyle={{ borderRadius: 12, border: '1px solid hsl(var(--border))', fontSize: 11 }} />
+              <Area type="monotone" dataKey="earnings" stroke="hsl(var(--primary))"
+                fill="url(#port-grad)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-[180px] flex items-center justify-center text-muted-foreground text-sm">
+            No earnings history yet
+          </div>
+        )}
+      </div>
+
+      <div className="bg-card border border-border rounded-2xl p-5">
+        <h3 className="font-semibold text-sm mb-4">Active Investments ({activeCount})</h3>
+        {dashData?.activeInvestments?.length > 0 ? (
+          <div className="space-y-3">
+            {dashData.activeInvestments.map((inv: any) => {
+              const pct = Math.min(100, (inv.days_completed / inv.duration_days) * 100);
+              return (
+                <div key={inv.id} className="p-4 rounded-xl bg-muted/30 border border-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-sm font-semibold">{inv.package_name}</p>
+                      <Badge className="text-[9px] h-4 mt-0.5">{inv.tier}</Badge>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-emerald-600">+{inv.daily_return_pct}%/day</div>
+                      <div className="text-[10px] text-muted-foreground">Day {inv.days_completed}/{inv.duration_days}</div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                    <span>Principal: <strong>₦{parseFloat(inv.amount).toLocaleString()}</strong></span>
+                    <span className="text-emerald-600 font-semibold">+₦{parseFloat(inv.total_earned).toLocaleString()}</span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <motion.div className="h-full bg-primary rounded-full"
+                      initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                      transition={{ duration: 1.2, ease: "easeOut" }} />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">{pct.toFixed(0)}% complete</p>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-8 text-center text-muted-foreground text-sm">No active investments</div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   ASSETS TAB
+───────────────────────────────────────── */
+const ASSET_LIST = [
+  { symbol: "BTC", name: "Bitcoin", color: "#f97316", bg: "bg-orange-50 border-orange-100", text: "text-orange-600" },
+  { symbol: "ETH", name: "Ethereum", color: "#8b5cf6", bg: "bg-violet-50 border-violet-100", text: "text-violet-600" },
+  { symbol: "BNB", name: "BNB", color: "#eab308", bg: "bg-yellow-50 border-yellow-100", text: "text-yellow-600" },
+  { symbol: "SOL", name: "Solana", color: "#10b981", bg: "bg-emerald-50 border-emerald-100", text: "text-emerald-600" },
+  { symbol: "USDT", name: "Tether", color: "#3b82f6", bg: "bg-blue-50 border-blue-100", text: "text-blue-600" },
+];
+
+function AssetsTab({ dashData }: { dashData: any }) {
+  const [prices, setPrices] = useState<Record<string, { usd: number; usd_24h_change: number }>>({});
+  const [loading, setLoading] = useState(true);
+  const allocation = dashData?.allocation || [];
+
+  useEffect(() => {
+    fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin,solana,tether&vs_currencies=usd&include_24hr_change=true")
+      .then(r => r.json())
+      .then(data => {
+        setPrices({
+          BTC: data.bitcoin,
+          ETH: data.ethereum,
+          BNB: data.binancecoin,
+          SOL: data.solana,
+          USDT: data.tether,
+        });
+      })
+      .catch(() => {
+        setPrices({
+          BTC: { usd: 65000, usd_24h_change: 2.4 },
+          ETH: { usd: 3200,  usd_24h_change: 1.8 },
+          BNB: { usd: 580,   usd_24h_change: -0.5 },
+          SOL: { usd: 155,   usd_24h_change: 3.2 },
+          USDT: { usd: 1.0,  usd_24h_change: 0.01 },
+        });
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <motion.div key="assets-tab"
+      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.28 }} className="p-5 space-y-5">
+
+      <div className="bg-gradient-to-br from-foreground to-foreground/90 rounded-3xl p-6 text-white">
+        <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold mb-2">Your Holdings</p>
+        <h2 className="text-3xl font-bold font-display">{allocation.length} Assets</h2>
+        <p className="text-white/50 text-sm mt-1">Diversified across investment packages</p>
+      </div>
+
+      {allocation.length > 0 && (
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <h3 className="font-semibold text-sm mb-4">Portfolio Allocation</h3>
+          <div className="space-y-3">
+            {allocation.map((a: any, i: number) => {
+              const total = allocation.reduce((s: number, x: any) => s + parseFloat(x.value), 0);
+              const pct = total > 0 ? ((parseFloat(a.value) / total) * 100).toFixed(1) : "0";
+              return (
+                <div key={a.name} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                      <span className="font-medium">{a.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-semibold">₦{parseFloat(a.value).toLocaleString()}</span>
+                      <span className="text-muted-foreground text-xs ml-2">{pct}%</span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <motion.div className="h-full rounded-full"
+                      style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}
+                      initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                      transition={{ duration: 1, delay: i * 0.05, ease: "easeOut" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+          <h3 className="font-semibold text-sm">Market Prices</h3>
+          {loading && <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
+        </div>
+        <div className="divide-y divide-border">
+          {ASSET_LIST.map(({ symbol, name, bg, text }) => {
+            const p = prices[symbol];
+            const change = p?.usd_24h_change ?? 0;
+            const isUp = change >= 0;
+            return (
+              <motion.div key={symbol}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="flex items-center gap-4 px-4 py-3.5 hover:bg-muted/20 transition-colors">
+                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${bg}`}>
+                  <span className={`text-xs font-bold ${text}`}>{symbol.slice(0, 3)}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold">{name}</p>
+                  <p className="text-xs text-muted-foreground">{symbol}</p>
+                </div>
+                {p ? (
+                  <div className="text-right">
+                    <p className="text-sm font-bold">${p.usd.toLocaleString()}</p>
+                    <p className={`text-xs font-semibold ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+                      {isUp ? "+" : ""}{change.toFixed(2)}%
+                    </p>
+                  </div>
+                ) : (
+                  <div className="w-16 h-8 bg-muted rounded animate-pulse" />
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -549,13 +913,17 @@ export default function Dashboard() {
   const filteredPkgs = tierFilter === "All" ? packages : packages.filter((p: any) => p.tier === tierFilter);
 
   const navItems = [
-    { id: "overview",      icon: BarChart3,  label: "Overview" },
-    { id: "invest",        icon: Package,    label: "Invest" },
-    { id: "transactions",  icon: Activity,   label: "Transactions" },
-    { id: "referrals",     icon: Zap,        label: "Referrals" },
-    { id: "fund",          icon: Wallet,     label: "Fund Wallet" },
-    { id: "withdraw",      icon: CreditCard, label: "Withdraw" },
+    { id: "overview",      icon: BarChart3,      label: "Welcome" },
+    { id: "portfolio",     icon: PieChartIcon,   label: "Portfolio" },
+    { id: "assets",        icon: Gem,            label: "Assets" },
+    { id: "invest",        icon: Package,        label: "Invest" },
+    { id: "transactions",  icon: Activity,       label: "Transactions" },
+    { id: "referrals",     icon: Zap,            label: "Referrals" },
+    { id: "fund",          icon: Wallet,         label: "Fund Wallet" },
+    { id: "withdraw",      icon: CreditCard,     label: "Withdraw" },
   ] as const;
+
+  const currentNav = navItems.find(n => n.id === activeTab);
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
@@ -640,10 +1008,10 @@ export default function Dashboard() {
             </button>
             <div>
               <h1 className="font-display font-bold text-base text-foreground leading-tight">
-                {navItems.find(n => n.id === activeTab)?.label}
+                {activeTab === "overview" ? `Welcome, ${user?.username || 'investor'}` : currentNav?.label}
               </h1>
               <p className="text-[11px] text-muted-foreground hidden sm:block">
-                {activeTab === "overview" ? `Welcome back, ${user?.username || 'investor'}` : "SmartInvest Platform"}
+                {activeTab === "overview" ? "Here's your investment summary" : "SmartInvest Platform"}
               </p>
             </div>
           </div>
@@ -654,6 +1022,10 @@ export default function Dashboard() {
                 ₦{parseFloat(String(user?.balance || 0)).toLocaleString()}
               </span>
             </div>
+            <button onClick={() => setActiveTab("fund")}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:brightness-110 transition-all">
+              <Plus className="w-3.5 h-3.5" /> Add Funds
+            </button>
             <button onClick={loadDashboard}
               className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               <RefreshCw className="w-4 h-4" />
@@ -676,7 +1048,7 @@ export default function Dashboard() {
           ) : (
             <AnimatePresence mode="wait">
 
-              {/* ═══ OVERVIEW ═══ */}
+              {/* ═══ OVERVIEW / WELCOME ═══ */}
               {activeTab === "overview" && (
                 <motion.div key="overview"
                   initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -689,10 +1061,10 @@ export default function Dashboard() {
                   {/* Quick stats */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {[
-                      { label: "Balance",    value: `₦${balance.toLocaleString()}`,                                                          icon: Wallet,    sub: "available" },
-                      { label: "Invested",   value: `₦${parseFloat(dashData?.investments?.total_invested || 0).toLocaleString()}`,            icon: TrendingUp, sub: `${dashData?.investments?.active_count || 0} active` },
-                      { label: "Earned",     value: `₦${parseFloat(dashData?.investments?.total_earned || 0).toLocaleString()}`,              icon: DollarSign, sub: "total returns" },
-                      { label: "Referrals",  value: String(dashData?.referrals?.referred_users || 0),                                         icon: Zap,        sub: `₦${parseFloat(dashData?.referrals?.earnings || 0).toLocaleString()} earned` },
+                      { label: "Balance",    value: `₦${balance.toLocaleString()}`,                                                icon: Wallet,    sub: "available" },
+                      { label: "Invested",   value: `₦${parseFloat(dashData?.investments?.total_invested || 0).toLocaleString()}`, icon: TrendingUp, sub: `${dashData?.investments?.active_count || 0} active` },
+                      { label: "Earned",     value: `₦${parseFloat(dashData?.investments?.total_earned || 0).toLocaleString()}`,   icon: DollarSign, sub: "total returns" },
+                      { label: "Referrals",  value: String(dashData?.referrals?.referred_users || 0),                              icon: Zap,        sub: `₦${parseFloat(dashData?.referrals?.earnings || 0).toLocaleString()} earned` },
                     ].map(({ label, value, icon: Icon, sub }) => (
                       <motion.div key={label} whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}
                         className="bg-card border border-border rounded-2xl p-4">
@@ -771,6 +1143,9 @@ export default function Dashboard() {
                       </Button>
                     </div>
                   </div>
+
+                  {/* Live market chart */}
+                  <MarketPriceChart />
 
                   {/* Active Investments */}
                   <div className="bg-card border border-border rounded-2xl p-5">
@@ -873,6 +1248,16 @@ export default function Dashboard() {
                 </motion.div>
               )}
 
+              {/* ═══ PORTFOLIO ═══ */}
+              {activeTab === "portfolio" && (
+                <PortfolioTab dashData={dashData} balance={balance} />
+              )}
+
+              {/* ═══ ASSETS ═══ */}
+              {activeTab === "assets" && (
+                <AssetsTab dashData={dashData} />
+              )}
+
               {/* ═══ INVEST ═══ */}
               {activeTab === "invest" && (
                 <motion.div key="invest"
@@ -912,88 +1297,90 @@ export default function Dashboard() {
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredPkgs.map((pkg: any, i: number) => {
-                      const canAfford = balance >= parseFloat(pkg.price);
-                      const expectedReturn = parseFloat(pkg.price) * (1 + parseFloat(pkg.total_roi) / 100);
-                      return (
-                        <motion.div key={pkg.id}
-                          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.04 }} whileHover={{ y: -3 }}
-                          className={`bg-card border rounded-2xl p-5 flex flex-col transition-all
-                            ${canAfford ? 'border-border hover:border-primary/50 hover:shadow-md' : 'border-border opacity-60'}`}>
-                          <div className="flex items-center justify-between mb-3">
-                            <Badge className="text-[10px] h-5">{pkg.tier}</Badge>
-                            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{pkg.duration_days}d</span>
+                  {packages.length === 0 ? (
+                    <div className="py-16 text-center">
+                      <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground">Loading packages…</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {filteredPkgs.map((pkg: any) => (
+                        <motion.div key={pkg.id} whileHover={{ scale: 1.01 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          className="bg-card border border-border rounded-2xl p-5 cursor-pointer relative overflow-hidden"
+                          onClick={() => setSelectedPkg(pkg)}>
+                          <div className="absolute top-3 right-3">
+                            <Badge variant="secondary" className="text-[10px]">{pkg.tier}</Badge>
                           </div>
-                          <h3 className="font-bold text-foreground mb-1">{pkg.name}</h3>
-                          <div className="text-2xl font-bold text-primary mb-4">₦{parseFloat(pkg.price).toLocaleString()}</div>
-                          <div className="space-y-2 mb-4 flex-1 text-xs">
-                            {[
-                              ["Daily Return", `+${pkg.daily_return_pct}%`, "text-emerald-600 font-bold"],
-                              ["Duration",     `${pkg.duration_days} days`, "text-foreground font-semibold"],
-                              ["Total ROI",    `+${parseFloat(pkg.total_roi).toFixed(1)}%`, "text-primary font-bold"],
-                              ["Expected",     `₦${expectedReturn.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, "text-foreground font-semibold"],
-                            ].map(([l, v, cls]) => (
-                              <div key={l} className="flex justify-between">
-                                <span className="text-muted-foreground">{l}</span>
-                                <span className={cls}>{v}</span>
-                              </div>
-                            ))}
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                            <Package className="w-5 h-5 text-primary" />
                           </div>
-                          <Button size="sm" onClick={() => setSelectedPkg(pkg)} disabled={!canAfford}
-                            className={`w-full rounded-xl ${canAfford ? 'bg-primary text-white hover:brightness-110' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}>
-                            {canAfford ? "Invest Now" : "Insufficient Balance"}
-                          </Button>
+                          <h3 className="font-semibold text-sm mb-1">{pkg.name}</h3>
+                          <p className="text-xs text-muted-foreground mb-3">{pkg.description}</p>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="p-2 rounded-lg bg-muted/50">
+                              <div className="text-muted-foreground">Min. Amount</div>
+                              <div className="font-bold text-foreground mt-0.5">₦{parseFloat(pkg.min_amount).toLocaleString()}</div>
+                            </div>
+                            <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-100">
+                              <div className="text-muted-foreground">Daily Return</div>
+                              <div className="font-bold text-emerald-600 mt-0.5">+{pkg.daily_return_pct}%</div>
+                            </div>
+                          </div>
                         </motion.div>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  )}
 
-                  {/* Confirm Modal */}
+                  {/* Investment modal */}
                   <AnimatePresence>
                     {selectedPkg && (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                        <motion.div initial={{ y: 40, scale: 0.95 }} animate={{ y: 0, scale: 1 }}
-                          exit={{ y: 40, scale: 0.95 }} transition={{ type: "spring", stiffness: 300, damping: 28 }}
-                          className="bg-background rounded-3xl p-6 w-full max-w-sm border border-border shadow-2xl">
-                          <div className="text-center mb-5">
-                            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                              <TrendingUp className="w-7 h-7 text-primary" />
+                        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                        onClick={e => e.target === e.currentTarget && setSelectedPkg(null)}>
+                        <motion.div initial={{ opacity: 0, y: 40, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 40, scale: 0.97 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                          className="bg-background border border-border rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+                          <div className="flex items-center justify-between mb-5">
+                            <div>
+                              <h3 className="font-bold text-lg">{selectedPkg.name}</h3>
+                              <Badge variant="secondary" className="text-[10px] mt-0.5">{selectedPkg.tier}</Badge>
                             </div>
-                            <h3 className="font-bold text-lg">Confirm Investment</h3>
-                            <p className="text-sm text-muted-foreground mt-0.5">Review details before confirming</p>
+                            <button onClick={() => setSelectedPkg(null)}
+                              className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground">
+                              ✕
+                            </button>
                           </div>
-                          <div className="space-y-2 p-4 rounded-2xl bg-muted/50 mb-5">
+                          <div className="space-y-3 mb-5">
                             {[
-                              ["Package",     selectedPkg.name],
-                              ["Amount",      `₦${parseFloat(selectedPkg.price).toLocaleString()}`],
-                              ["Daily Return", `+${selectedPkg.daily_return_pct}%`],
-                              ["Duration",    `${selectedPkg.duration_days} days`],
-                              ["Total ROI",   `+${parseFloat(selectedPkg.total_roi).toFixed(1)}%`],
-                            ].map(([l, v]) => (
-                              <div key={l} className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">{l}</span>
-                                <span className="font-semibold">{v}</span>
+                              { label: "Minimum Amount", value: `₦${parseFloat(selectedPkg.min_amount).toLocaleString()}` },
+                              { label: "Daily Return",   value: `+${selectedPkg.daily_return_pct}%`, cls: "text-emerald-600" },
+                              { label: "Duration",       value: `${selectedPkg.duration_days} days` },
+                              { label: "Your Balance",   value: `₦${balance.toLocaleString()}`, cls: balance >= parseFloat(selectedPkg.min_amount) ? "text-foreground" : "text-red-500" },
+                            ].map(({ label, value, cls }) => (
+                              <div key={label} className="flex justify-between text-sm py-2 border-b border-border last:border-0">
+                                <span className="text-muted-foreground">{label}</span>
+                                <span className={`font-semibold ${cls || ""}`}>{value}</span>
                               </div>
                             ))}
-                            <div className="border-t border-border pt-2 flex justify-between text-sm">
-                              <span className="text-muted-foreground">Balance after</span>
-                              <span className={`font-bold ${balance - parseFloat(selectedPkg.price) >= 0 ? 'text-foreground' : 'text-red-500'}`}>
-                                ₦{(balance - parseFloat(selectedPkg.price)).toLocaleString()}
-                              </span>
-                            </div>
                           </div>
-                          <div className="flex gap-3">
-                            <Button variant="outline" onClick={() => setSelectedPkg(null)} className="flex-1 rounded-xl">Cancel</Button>
+                          {balance < parseFloat(selectedPkg.min_amount) ? (
+                            <div>
+                              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 mb-3">
+                                Insufficient balance. You need ₦{(parseFloat(selectedPkg.min_amount) - balance).toLocaleString()} more.
+                              </div>
+                              <Button onClick={() => { setSelectedPkg(null); setActiveTab("fund"); }}
+                                className="w-full h-11 bg-primary text-white rounded-xl">
+                                <Plus className="w-4 h-4 mr-1" /> Fund Wallet First
+                              </Button>
+                            </div>
+                          ) : (
                             <Button onClick={() => handleInvest(selectedPkg)} disabled={pkgLoading}
-                              className="flex-1 bg-primary text-white rounded-xl hover:brightness-110">
+                              className="w-full h-11 bg-primary text-white rounded-xl font-semibold hover:brightness-110 transition-all">
                               {pkgLoading
                                 ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Investing…</span>
-                                : "Confirm"}
+                                : `Invest ₦${parseFloat(selectedPkg.min_amount).toLocaleString()}`}
                             </Button>
-                          </div>
+                          )}
                         </motion.div>
                       </motion.div>
                     )}

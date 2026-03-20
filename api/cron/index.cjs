@@ -1,6 +1,6 @@
 const express = require('express');
-const { Investment, User, Transaction, Trade } = require('../models');
-const connectDB = require('../lib/db');
+const { Investment, User, Transaction, Trade } = require('../../models/index.cjs');
+const connectDB = require('../../lib/db.cjs');
 
 const ASSETS = ['Oil & Energy', 'Crypto', 'Gold', 'Equities', 'Forex', 'Real Estate'];
 

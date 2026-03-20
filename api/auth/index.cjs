@@ -1,8 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User } = require('../../models');
-const connectDB = require('../../lib/db');
+const { User } = require('../../models/index.cjs');
+const connectDB = require('../../lib/db.cjs');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'smartinvest_secret_key';

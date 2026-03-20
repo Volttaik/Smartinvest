@@ -1,6 +1,6 @@
 const express = require('express');
-const { User, Transaction } = require('../../models');
-const connectDB = require('../../lib/db');
+const { User, Transaction } = require('../../models/index.cjs');
+const connectDB = require('../../lib/db.cjs');
 
 const router = express.Router();
 

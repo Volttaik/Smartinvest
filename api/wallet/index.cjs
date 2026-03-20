@@ -1,7 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const { User, Transaction } = require('../../models');
-const connectDB = require('../../lib/db');
+const { User, Transaction } = require('../../models/index.cjs');
+const connectDB = require('../../lib/db.cjs');
 
 const axios = require('axios');
 

@@ -1,6 +1,6 @@
 const { mongoose } = require('mongoose');
-const { User, Package, Investment, Transaction, Trade, CaptchaCode } = require('../models');
-const connectDB = require('../lib/db');
+const { User, Package, Investment, Transaction, Trade } = require('../../models/index.cjs');
+const connectDB = require('../../lib/db.cjs');
 
 const packages = [
   { name: 'Bronze Starter', price: 5000, daily: 0.5, days: 20, tier: 'Starter' },
@@ -70,12 +70,10 @@ async function initializeDatabase() {
   }
 }
 
-// API handler for Vercel
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+const express = require('express');
+const router = express.Router();
 
+router.post('/', async (req, res) => {
   // Check for init secret to prevent unauthorized calls
   const initSecret = req.body.secret || req.headers['x-init-secret'];
   if (initSecret !== process.env.INIT_SECRET) {
@@ -84,4 +82,6 @@ export default async function handler(req, res) {
 
   const result = await initializeDatabase();
   res.json(result);
-}
+});
+
+module.exports = router;

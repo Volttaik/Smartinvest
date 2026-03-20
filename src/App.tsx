@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/lib/auth";
 import Navbar from "@/components/Navbar";
 import TickerBar from "@/components/TickerBar";
 import PageLoader from "@/components/PageLoader";
@@ -16,8 +17,12 @@ import Footer from "@/components/Footer";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Dashboard from "@/pages/Dashboard";
+import Portfolio from "@/pages/Portfolio";
+import Support from "@/pages/Support";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import Terms from "@/pages/Terms";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-// Shared header shown on landing + auth pages (not dashboard)
 function PublicHeader() {
   return (
     <>
@@ -48,37 +53,19 @@ function HomePage() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <>
-              <PublicHeader />
-              <HomePage />
-            </>
-          }
-        />
-        <Route
-          path="/login"
-          element={
-            <>
-              <PublicHeader />
-              <Login />
-            </>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <>
-              <PublicHeader />
-              <Register />
-            </>
-          }
-        />
-        <Route path="/dashboard" element={<Dashboard />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<><PublicHeader /><HomePage /></>} />
+          <Route path="/login" element={<><PublicHeader /><Login /></>} />
+          <Route path="/register" element={<><PublicHeader /><Register /></>} />
+          <Route path="/support" element={<><PublicHeader /><Support /></>} />
+          <Route path="/privacy" element={<><PublicHeader /><PrivacyPolicy /></>} />
+          <Route path="/terms" element={<><PublicHeader /><Terms /></>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/portfolio" element={<ProtectedRoute><><PublicHeader /><Portfolio /></></ProtectedRoute>} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

@@ -3,10 +3,27 @@ import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 
 const footerLinks = {
-  Company: ["About Us", "Leadership", "Careers", "Press"],
-  Services: ["Equity Portfolios", "Fixed Income", "Global Markets", "Wealth Planning"],
-  Resources: ["Market Insights", "Investment Guide", "FAQ", "Blog"],
-  Legal: ["Privacy Policy", "Terms of Service", "Disclosures", "Cookies"],
+  Company: [
+    { label: "About Us", href: "#" },
+    { label: "Support", href: "/support" },
+    { label: "FAQ", href: "/support" },
+  ],
+  Services: [
+    { label: "Investment Packages", href: "/#pricing" },
+    { label: "Referral Program", href: "/dashboard" },
+    { label: "Fund Wallet", href: "/dashboard" },
+    { label: "Withdrawals", href: "/dashboard" },
+  ],
+  Account: [
+    { label: "Sign Up", href: "/register" },
+    { label: "Sign In", href: "/login" },
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Portfolio", href: "/portfolio" },
+  ],
+  Legal: [
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms & Conditions", href: "/terms" },
+  ],
 };
 
 export default function Footer() {
@@ -24,7 +41,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-[180px]">
-              Institutional-grade investment strategies for the modern investor.
+              AI-powered investment platform operating in Naira. All transactions secured by Paystack.
             </p>
           </div>
 
@@ -32,11 +49,11 @@ export default function Footer() {
             <div key={cat}>
               <div className="text-xs font-bold uppercase tracking-widest text-foreground mb-4">{cat}</div>
               <ul className="space-y-2.5">
-                {links.map((link) => (
-                  <li key={link}>
-                    <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                      {link}
-                    </a>
+                {links.map(({ label, href }) => (
+                  <li key={label}>
+                    <Link to={href} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      {label}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -47,10 +64,10 @@ export default function Footer() {
         <Separator />
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 pt-6">
           <p className="text-xs text-muted-foreground">
-            © 2024 Smart Invest, Inc. All rights reserved.
+            © 2025 Smart Invest. All rights reserved.
           </p>
-          <p className="text-xs text-muted-foreground">
-            Investment involves risk. Past performance does not guarantee future results.
+          <p className="text-xs text-muted-foreground text-center">
+            Investment involves risk. Returns are probabilistic and not guaranteed. You may lose capital.
           </p>
         </div>
       </div>

@@ -7,11 +7,11 @@ module.exports = async function handler(req, res) {
   try {
     const userId = await verifyToken(req);
     await connectDB();
-    const investments = await Investment.find({ user_id: userId })
-      .populate('package_id', 'name tier')
+    const investments = await Investment.find({ user_id: userId, status: 'active' })
+      .populate('package_id', 'tier')
       .sort({ created_at: -1 });
     send(res, 200, investments);
   } catch (err) {
-    send(res, err.status || 500, { error: err.message || 'Failed to fetch investments' });
+    send(res, err.status || 500, { error: err.message || 'Failed to fetch active investments' });
   }
 };

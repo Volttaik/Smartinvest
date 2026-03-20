@@ -5,10 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5000",
-    "dev:backend": "node server.cjs",
+    "dev:backend": "node dev-server.cjs",
     "dev:full": "concurrently \"npm run dev\" \"npm run dev:backend\"",
     "build": "tsc && vite build",
-    "start": "node server.cjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -23,7 +22,6 @@
     "clsx": "^2.1.1",
     "concurrently": "^9.2.1",
     "cors": "^2.8.6",
-    "express": "^5.2.1",
     "framer-motion": "^11.11.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.454.0",

@@ -1,181 +1,73 @@
-const express = require('express');
 const { User, Investment, Transaction, Trade } = require('../../models/index.cjs');
 const connectDB = require('../../lib/db.cjs');
+const { verifyToken, send } = require('../../lib/auth-utils.cjs');
 
-const router = express.Router();
-
-const authMiddleware = async (req, res, next) => {
-  const jwt = require('jsonwebtoken');
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-  const token = header.split(' ')[1];
+module.exports = async function handler(req, res) {
+  if (req.method !== 'GET') return send(res, 405, { error: 'Method not allowed' });
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'smartinvest_secret_key');
-    req.userId = decoded.userId;
-    next();
-  } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' });
-  }
-};
-
-router.get('/', authMiddleware, async (req, res) => {
-  try {
+    const userId = await verifyToken(req);
     await connectDB();
 
-    const user = await User.findById(req.userId).select(
+    const user = await User.findById(userId).select(
       'id username email profile_picture balance referral_code referral_earnings total_earnings created_at'
     );
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    if (!user) return send(res, 404, { error: 'User not found' });
 
     const invSummary = await Investment.aggregate([
-      { $match: { user_id: req.userId } },
+      { $match: { user_id: userId } },
       {
         $group: {
           _id: null,
           active_count: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } },
           completed_count: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
           total_earned: { $sum: '$total_earned' },
-          total_invested: {
-            $sum: { $cond: [{ $eq: ['$status', 'active'] }, '$amount', 0] }
-          }
+          total_invested: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, '$amount', 0] } }
         }
       }
     ]);
 
-    const summary = invSummary[0] || {
-      active_count: 0,
-      completed_count: 0,
-      total_earned: 0,
-      total_invested: 0
-    };
+    const summary = invSummary[0] || { active_count: 0, completed_count: 0, total_earned: 0, total_invested: 0 };
 
-    const activeInvestments = await Investment.find({
-      user_id: req.userId,
-      status: 'active'
-    })
+    const activeInvestments = await Investment.find({ user_id: userId, status: 'active' })
       .populate('package_id', 'tier name')
       .select('id package_name amount daily_return_pct duration_days days_completed total_earned status start_date')
       .sort({ created_at: -1 })
       .limit(5);
 
-    const recentTransactions = await Transaction.find({ user_id: req.userId })
-      .sort({ created_at: -1 })
-      .limit(10);
-
-    const recentTrades = await Trade.find({ user_id: req.userId })
-      .sort({ created_at: -1 })
-      .limit(10);
-
-    const referredCount = await User.countDocuments({ referred_by: req.userId });
+    const recentTransactions = await Transaction.find({ user_id: userId }).sort({ created_at: -1 }).limit(10);
+    const recentTrades = await Trade.find({ user_id: userId }).sort({ created_at: -1 }).limit(10);
+    const referredCount = await User.countDocuments({ referred_by: userId });
 
     const monthlyData = await Transaction.aggregate([
-      {
-        $match: {
-          user_id: req.userId,
-          created_at: { $gt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) }
-        }
-      },
+      { $match: { user_id: userId, created_at: { $gt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) } } },
       {
         $group: {
-          _id: {
-            year: { $year: '$created_at' },
-            month: { $month: '$created_at' }
-          },
-          earnings: {
-            $sum: {
-              $cond: [
-                {
-                  $in: ['$type', ['daily_return', 'trade_gain', 'referral_bonus']]
-                },
-                '$amount',
-                0
-              ]
-            }
-          },
-          invested: {
-            $sum: {
-              $cond: [{ $eq: ['$type', 'investment'] }, '$amount', 0]
-            }
-          }
+          _id: { year: { $year: '$created_at' }, month: { $month: '$created_at' } },
+          earnings: { $sum: { $cond: [{ $in: ['$type', ['daily_return', 'trade_gain', 'referral_bonus']] }, '$amount', 0] } },
+          invested: { $sum: { $cond: [{ $eq: ['$type', 'investment'] }, '$amount', 0] } }
         }
       },
-      {
-        $sort: { '_id.year': 1, '_id.month': 1 }
-      }
+      { $sort: { '_id.year': 1, '_id.month': 1 } }
     ]);
 
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const formattedData = monthlyData.map(d => ({
+    const chartData = monthlyData.map(d => ({
       month: monthNames[d._id.month - 1],
       earnings: d.earnings,
       invested: d.invested
     }));
 
-    res.json({
+    send(res, 200, {
       user,
       balance: parseFloat(user.balance),
       investments: summary,
       activeInvestments,
       recentTransactions,
       recentTrades,
-      referrals: {
-        referred_users: referredCount,
-        earnings: user.referral_earnings
-      },
-      chartData: formattedData
+      referrals: { referred_users: referredCount, earnings: user.referral_earnings },
+      chartData
     });
   } catch (err) {
-    console.error('Dashboard error:', err);
-    res.status(500).json({ error: 'Failed to fetch dashboard data' });
+    send(res, err.status || 500, { error: err.message || 'Failed to fetch dashboard data' });
   }
-});
-
-router.get('/portfolio', authMiddleware, async (req, res) => {
-  try {
-    await connectDB();
-
-    const allInvestments = await Investment.find({ user_id: req.userId })
-      .populate('package_id', 'tier name')
-      .sort({ created_at: -1 });
-
-    const allTrades = await Trade.find({ user_id: req.userId })
-      .sort({ created_at: -1 })
-      .limit(30);
-
-    const user = await User.findById(req.userId).select(
-      'balance total_earnings referral_earnings'
-    );
-
-    const allocationData = {};
-    allInvestments
-      .filter(i => i.status === 'active')
-      .forEach(i => {
-        const tier = i.package_id?.tier || 'Other';
-        allocationData[tier] = (allocationData[tier] || 0) + parseFloat(i.amount);
-      });
-
-    const allocation = Object.entries(allocationData).map(([name, value]) => ({
-      name,
-      value
-    }));
-
-    res.json({
-      investments: allInvestments,
-      trades: allTrades,
-      balance: user.balance,
-      totalEarnings: user.total_earnings,
-      referralEarnings: user.referral_earnings,
-      allocation
-    });
-  } catch (err) {
-    console.error('Portfolio error:', err);
-    res.status(500).json({ error: 'Failed to fetch portfolio data' });
-  }
-});
-
-module.exports = router;
+};

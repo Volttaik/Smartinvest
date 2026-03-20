@@ -1,6 +1,6 @@
-const { mongoose } = require('mongoose');
-const { User, Package, Investment, Transaction, Trade } = require('../../models/index.cjs');
+const { Package } = require('../../models/index.cjs');
 const connectDB = require('../../lib/db.cjs');
+const { send } = require('../../lib/auth-utils.cjs');
 
 const packages = [
   { name: 'Bronze Starter', price: 5000, daily: 0.5, days: 20, tier: 'Starter' },
@@ -35,53 +35,30 @@ const packages = [
   { name: 'Elite Executive', price: 25000, daily: 3.5, days: 60, tier: 'Executive' },
 ];
 
-async function initializeDatabase() {
+module.exports = async function handler(req, res) {
+  if (req.method !== 'POST') return send(res, 405, { error: 'Method not allowed' });
+
+  const initSecret = (req.body || {}).secret || req.headers['x-init-secret'];
+  if (initSecret !== process.env.INIT_SECRET) {
+    return send(res, 401, { error: 'Unauthorized' });
+  }
+
   try {
     await connectDB();
-
     const count = await Package.countDocuments();
     if (count > 0) {
-      console.log('✅ Packages already seeded.');
-      return { success: true, message: 'Packages already seeded', packageCount: count };
+      return send(res, 200, { success: true, message: 'Packages already seeded', packageCount: count });
     }
 
-    console.log('📦 Seeding packages...');
     for (const p of packages) {
-      const totalROI = p.daily * p.days;
       await Package.create({
-        name: p.name,
-        price: p.price,
-        daily_return_pct: p.daily,
-        duration_days: p.days,
-        total_roi: totalROI,
-        tier: p.tier
+        name: p.name, price: p.price, daily_return_pct: p.daily,
+        duration_days: p.days, total_roi: p.daily * p.days, tier: p.tier
       });
     }
-    console.log(`✅ Seeded ${packages.length} packages successfully!`);
-
-    return {
-      success: true,
-      message: `Seeded ${packages.length} packages`,
-      packageCount: packages.length
-    };
+    send(res, 200, { success: true, message: `Seeded ${packages.length} packages`, packageCount: packages.length });
   } catch (err) {
-    console.error('❌ Error seeding packages:', err);
-    return { success: false, error: err.message };
+    console.error('Init error:', err);
+    send(res, 500, { success: false, error: err.message });
   }
-}
-
-const express = require('express');
-const router = express.Router();
-
-router.post('/', async (req, res) => {
-  // Check for init secret to prevent unauthorized calls
-  const initSecret = req.body.secret || req.headers['x-init-secret'];
-  if (initSecret !== process.env.INIT_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  const result = await initializeDatabase();
-  res.json(result);
-});
-
-module.exports = router;
+};

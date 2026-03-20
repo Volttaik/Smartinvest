@@ -1,71 +1,35 @@
-const express = require('express');
 const { User, Transaction } = require('../../models/index.cjs');
 const connectDB = require('../../lib/db.cjs');
+const { verifyToken, send } = require('../../lib/auth-utils.cjs');
 
-const router = express.Router();
-
-const authMiddleware = async (req, res, next) => {
-  const jwt = require('jsonwebtoken');
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-  const token = header.split(' ')[1];
+module.exports = async function handler(req, res) {
+  if (req.method !== 'GET') return send(res, 405, { error: 'Method not allowed' });
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'smartinvest_secret_key');
-    req.userId = decoded.userId;
-    next();
-  } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' });
-  }
-};
-
-router.get('/', authMiddleware, async (req, res) => {
-  try {
+    const userId = await verifyToken(req);
     await connectDB();
 
-    const user = await User.findById(req.userId).select(
-      'referral_code referral_earnings'
-    );
+    const user = await User.findById(userId).select('referral_code referral_earnings');
+    if (!user) return send(res, 404, { error: 'User not found' });
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const referred = await User.find({ referred_by: req.userId })
+    const referred = await User.find({ referred_by: userId })
       .select('username created_at')
       .sort({ created_at: -1 })
       .lean();
 
-    // Get total invested amount for each referred user
     for (const refUser of referred) {
       const investmentTotal = await Transaction.aggregate([
-        {
-          $match: {
-            user_id: refUser._id,
-            type: 'investment',
-            status: 'completed'
-          }
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: '$amount' }
-          }
-        }
+        { $match: { user_id: refUser._id, type: 'investment', status: 'completed' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
       ]);
       refUser.total_invested = investmentTotal[0]?.total || 0;
     }
 
-    const commissions = await Transaction.find({
-      user_id: req.userId,
-      type: 'referral_bonus'
-    })
+    const commissions = await Transaction.find({ user_id: userId, type: 'referral_bonus' })
       .select('amount description created_at')
       .sort({ created_at: -1 })
       .limit(20);
 
-    res.json({
+    send(res, 200, {
       referralCode: user.referral_code,
       totalEarnings: user.referral_earnings,
       referredUsers: referred,
@@ -73,9 +37,6 @@ router.get('/', authMiddleware, async (req, res) => {
       commissionRate: 5
     });
   } catch (err) {
-    console.error('Referrals error:', err);
-    res.status(500).json({ error: 'Failed to fetch referral data' });
+    send(res, err.status || 500, { error: err.message || 'Failed to fetch referral data' });
   }
-});
-
-module.exports = router;
+};

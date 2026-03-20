@@ -1,0 +1,27 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/api/auth/register", "destination": "/api/auth/register" },
+    { "source": "/api/auth/login", "destination": "/api/auth/login" },
+    { "source": "/api/auth/me", "destination": "/api/auth/me" },
+    { "source": "/api/packages/invest", "destination": "/api/packages/invest" },
+    { "source": "/api/packages", "destination": "/api/packages" },
+    { "source": "/api/investments/active", "destination": "/api/investments/active" },
+    { "source": "/api/investments/summary", "destination": "/api/investments/summary" },
+    { "source": "/api/investments", "destination": "/api/investments" },
+    { "source": "/api/dashboard/portfolio", "destination": "/api/dashboard/portfolio" },
+    { "source": "/api/dashboard", "destination": "/api/dashboard" },
+    { "source": "/api/wallet/fund", "destination": "/api/wallet/fund" },
+    { "source": "/api/wallet/verify/:reference", "destination": "/api/wallet/verify/[reference]" },
+    { "source": "/api/wallet/withdraw", "destination": "/api/wallet/withdraw" },
+    { "source": "/api/wallet/transactions", "destination": "/api/wallet/transactions" },
+    { "source": "/api/referrals", "destination": "/api/referrals" },
+    { "source": "/api/init", "destination": "/api/init" },
+    { "source": "/api/cron", "destination": "/api/cron" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/cron?job=all&secret=CRON_SECRET_VALUE", "schedule": "0 0 * * *" }
+  ]
+}

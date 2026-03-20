@@ -97,7 +97,7 @@ export default function Login() {
           </div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
             className="relative z-10 grid grid-cols-3 gap-4">
-            {[["₦4.2B+", "Assets Managed"], ["18.4%", "Avg. Annual Return"], ["50k+", "Active Investors"]].map(([v, l]) => (
+            {[["₦850K+", "Assets Managed"], ["18.4%", "Avg. Annual Return"], ["12K+", "Active Investors"]].map(([v, l]) => (
               <div key={l} className="text-center">
                 <div className="text-2xl font-bold text-white mb-1">{v}</div>
                 <div className="text-xs text-white/50">{l}</div>

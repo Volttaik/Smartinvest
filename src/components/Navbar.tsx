@@ -1,20 +1,21 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Menu, X, TrendingUp, ArrowLeft, LayoutDashboard } from "lucide-react";
+import { Menu, X, TrendingUp, ArrowLeft, LayoutDashboard, User } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 
-const AVATAR_MAP: Record<string, { bg: string; icon: string }> = {
-  avatar1: { bg: "bg-red-500", icon: "💼" },
-  avatar2: { bg: "bg-blue-500", icon: "🚀" },
-  avatar3: { bg: "bg-green-500", icon: "📈" },
-  avatar4: { bg: "bg-purple-500", icon: "💎" },
-  avatar5: { bg: "bg-orange-500", icon: "⚡" },
-  avatar6: { bg: "bg-teal-500", icon: "🌟" },
-  avatar7: { bg: "bg-pink-500", icon: "👑" },
-  avatar8: { bg: "bg-indigo-500", icon: "🛡️" },
-};
+function ProfileAvatar({ src, size = "sm" }: { src?: string; size?: "sm" | "md" }) {
+  const dim = size === "sm" ? "w-6 h-6" : "w-9 h-9";
+  if (src && src.startsWith("data:image/")) {
+    return <img src={src} alt="Profile" className={`${dim} rounded-full object-cover flex-shrink-0`} />;
+  }
+  return (
+    <div className={`${dim} rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0`}>
+      <User className={size === "sm" ? "w-3 h-3 text-primary" : "w-4 h-4 text-primary"} />
+    </div>
+  );
+}
 
 const links = [
   { label: "Home", href: "/" },

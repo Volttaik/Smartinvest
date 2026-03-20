@@ -4,15 +4,15 @@ import { ArrowRight, ShieldCheck, TrendingUp, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const badges = [
-  { icon: ShieldCheck, label: "SEC Regulated" },
+  { icon: ShieldCheck, label: "Secure & Regulated" },
   { icon: TrendingUp, label: "18.4% Avg Return" },
-  { icon: Globe, label: "32 Countries" },
+  { icon: Globe, label: "30 Packages" },
 ];
 
 const stats = [
-  { value: "₦4.2B+", label: "Assets Under Management" },
+  { value: "₦850K+", label: "Assets Under Management" },
   { value: "18.4%", label: "Average Annual Return" },
-  { value: "99.7%", label: "Client Satisfaction Rate" },
+  { value: "12K+", label: "Active Investors" },
 ];
 
 const container = {

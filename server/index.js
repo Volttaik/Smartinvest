@@ -1,7 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const pool = require('./db');
+const mongoose = require('mongoose');
+const connectDB = require('./db');
 const seedPackages = require('./seeds/packages');
 const { startCronJobs } = require('./lib/cron');
 
@@ -23,9 +24,16 @@ app.use('/api/referrals', require('./routes/referrals'));
 
 app.get('/api/health', async (req, res) => {
   try {
-    await pool.query('SELECT 1');
-    res.json({ status: 'ok', db: 'connected', timestamp: new Date().toISOString() });
-  } catch {
+    if (mongoose.connection.readyState === 1) {
+      res.json({
+        status: 'ok',
+        db: 'connected',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(500).json({ status: 'error', db: 'disconnected' });
+    }
+  } catch (err) {
     res.status(500).json({ status: 'error', db: 'disconnected' });
   }
 });
@@ -38,8 +46,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 SmartInvest API running on port ${PORT}`);
   try {
-    await pool.query('SELECT 1');
-    console.log('✅ Database connected');
+    await connectDB();
     await seedPackages();
     startCronJobs();
   } catch (err) {

@@ -1,4 +1,4 @@
-const pool = require('../db');
+const Package = require('../models/Package');
 
 const packages = [
   { name: 'Bronze Starter', price: 5000, daily: 0.5, days: 20, tier: 'Starter' },
@@ -34,20 +34,30 @@ const packages = [
 ];
 
 async function seedPackages() {
-  const { rows: existing } = await pool.query('SELECT COUNT(*) FROM packages');
-  if (parseInt(existing[0].count) > 0) {
-    console.log('Packages already seeded.');
-    return;
+  try {
+    const count = await Package.countDocuments();
+    if (count > 0) {
+      console.log('✅ Packages already seeded.');
+      return;
+    }
+
+    console.log('📦 Seeding packages...');
+    for (const p of packages) {
+      const totalROI = p.daily * p.days;
+      await Package.create({
+        name: p.name,
+        price: p.price,
+        daily_return_pct: p.daily,
+        duration_days: p.days,
+        total_roi: totalROI,
+        tier: p.tier
+      });
+    }
+    console.log(`✅ Seeded ${packages.length} packages successfully!`);
+  } catch (err) {
+    console.error('❌ Error seeding packages:', err);
+    throw err;
   }
-  for (const p of packages) {
-    const totalROI = p.daily * p.days;
-    await pool.query(
-      `INSERT INTO packages (name, price, daily_return_pct, duration_days, total_roi, tier)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [p.name, p.price, p.daily, p.days, totalROI, p.tier]
-    );
-  }
-  console.log('30 packages seeded successfully!');
 }
 
 module.exports = seedPackages;

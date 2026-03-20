@@ -1,6 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const pool = require('../db');
+const { User, Transaction } = require('../models');
 const auth = require('../middleware/auth');
 const paystack = require('../lib/paystack');
 
@@ -11,10 +11,17 @@ const MIN_WITHDRAWAL = 10000;
 router.post('/fund', auth, async (req, res) => {
   try {
     const { amount } = req.body;
+
     if (!amount || amount < 100) {
       return res.status(400).json({ error: 'Minimum deposit is ₦100' });
     }
-    const { rows: [user] } = await pool.query('SELECT email FROM users WHERE id = $1', [req.userId]);
+
+    const user = await User.findById(req.userId).select('email');
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     const reference = `dep_${req.userId}_${Date.now()}`;
 
     const result = await paystack.initializeTransaction({
@@ -22,20 +29,27 @@ router.post('/fund', auth, async (req, res) => {
       amount: parseFloat(amount),
       reference,
       callbackUrl: `${FRONTEND_URL}/dashboard?funded=true&ref=${reference}`,
-      metadata: { userId: req.userId, type: 'deposit' },
+      metadata: { userId: req.userId, type: 'deposit' }
     });
 
     if (!result.status) {
       return res.status(400).json({ error: result.message || 'Failed to initialize payment' });
     }
 
-    await pool.query(
-      `INSERT INTO transactions (user_id, type, amount, description, status, paystack_ref, reference)
-       VALUES ($1, 'deposit', $2, 'Wallet funding via Paystack', 'pending', $3, $3)`,
-      [req.userId, amount, reference]
-    );
+    await Transaction.create({
+      user_id: req.userId,
+      type: 'deposit',
+      amount: amount,
+      description: 'Wallet funding via Paystack',
+      status: 'pending',
+      paystack_ref: reference,
+      reference: reference
+    });
 
-    res.json({ authorizationUrl: result.data.authorization_url, reference });
+    res.json({
+      authorizationUrl: result.data.authorization_url,
+      reference
+    });
   } catch (err) {
     console.error('Fund error:', err.message);
     res.status(500).json({ error: 'Payment initialization failed. Check Paystack configuration.' });
@@ -45,44 +59,44 @@ router.post('/fund', auth, async (req, res) => {
 router.get('/verify/:reference', auth, async (req, res) => {
   try {
     const { reference } = req.params;
+
     const result = await paystack.verifyTransaction(reference);
 
     if (!result.status || result.data.status !== 'success') {
-      await pool.query(
-        `UPDATE transactions SET status = 'failed' WHERE paystack_ref = $1 AND user_id = $2`,
-        [reference, req.userId]
+      await Transaction.updateOne(
+        { paystack_ref: reference, user_id: req.userId },
+        { status: 'failed' }
       );
       return res.status(400).json({ error: 'Payment not successful' });
     }
 
-    const { rows: existing } = await pool.query(
-      `SELECT * FROM transactions WHERE paystack_ref = $1 AND status = 'completed'`,
-      [reference]
-    );
-    if (existing.length > 0) {
+    const existing = await Transaction.findOne({
+      paystack_ref: reference,
+      status: 'completed'
+    });
+
+    if (existing) {
       return res.json({ message: 'Already credited', already: true });
     }
 
     const amount = result.data.amount / 100;
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      await client.query(
-        `UPDATE transactions SET status = 'completed', amount = $1 WHERE paystack_ref = $2 AND user_id = $3`,
-        [amount, reference, req.userId]
-      );
-      await client.query(
-        `UPDATE users SET balance = balance + $1 WHERE id = $2`,
-        [amount, req.userId]
-      );
-      await client.query('COMMIT');
-      res.json({ message: 'Wallet funded successfully', amount });
-    } catch {
-      await client.query('ROLLBACK');
-      res.status(500).json({ error: 'Failed to credit wallet' });
-    } finally {
-      client.release();
-    }
+
+    await Transaction.updateOne(
+      { paystack_ref: reference, user_id: req.userId },
+      {
+        status: 'completed',
+        amount: amount
+      }
+    );
+
+    await User.findByIdAndUpdate(req.userId, {
+      $inc: { balance: amount }
+    });
+
+    res.json({
+      message: 'Wallet funded successfully',
+      amount
+    });
   } catch (err) {
     console.error('Verify error:', err.message);
     res.status(500).json({ error: 'Payment verification failed' });
@@ -90,79 +104,90 @@ router.get('/verify/:reference', auth, async (req, res) => {
 });
 
 router.post('/withdraw', auth, async (req, res) => {
-  const client = await pool.connect();
   try {
     const { amount, accountName, accountNumber, bankCode, bankName } = req.body;
+
     if (!amount || !accountName || !accountNumber || !bankCode) {
       return res.status(400).json({ error: 'Amount, account name, number, and bank code are required' });
     }
+
     if (amount < MIN_WITHDRAWAL) {
       return res.status(400).json({ error: `Minimum withdrawal is ₦${MIN_WITHDRAWAL.toLocaleString()}` });
     }
 
-    const { rows: [user] } = await client.query('SELECT * FROM users WHERE id = $1', [req.userId]);
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     if (parseFloat(user.balance) < amount) {
       return res.status(400).json({ error: 'Insufficient balance' });
     }
 
-    await client.query('BEGIN');
     const reference = `wdw_${req.userId}_${Date.now()}`;
 
     const recipientResult = await paystack.createTransferRecipient({
       name: accountName,
       accountNumber,
-      bankCode,
+      bankCode
     });
+
     if (!recipientResult.status) {
-      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Invalid bank details' });
     }
+
     const recipientCode = recipientResult.data.recipient_code;
 
     const transferResult = await paystack.initiateTransfer({
       amount: parseFloat(amount),
       recipient: recipientCode,
       reason: 'SmartInvest Withdrawal',
-      reference,
+      reference
     });
 
     const status = transferResult.status ? 'completed' : 'failed';
-    const newBalance = parseFloat(user.balance) - parseFloat(amount);
 
     if (transferResult.status) {
-      await client.query('UPDATE users SET balance = $1 WHERE id = $2', [newBalance, req.userId]);
+      user.balance = parseFloat(user.balance) - parseFloat(amount);
+      await user.save();
     }
 
-    await client.query(
-      `INSERT INTO transactions (user_id, type, amount, description, status, reference, metadata)
-       VALUES ($1, 'withdrawal', $2, $3, $4, $5, $6)`,
-      [req.userId, amount, `Withdrawal to ${bankName} - ${accountNumber}`, status, reference,
-       JSON.stringify({ accountName, accountNumber, bankName, bankCode })]
-    );
+    await Transaction.create({
+      user_id: req.userId,
+      type: 'withdrawal',
+      amount: amount,
+      description: `Withdrawal to ${bankName} - ${accountNumber}`,
+      status: status,
+      reference: reference,
+      metadata: {
+        accountName,
+        accountNumber,
+        bankName,
+        bankCode
+      }
+    });
 
-    await client.query('COMMIT');
     if (status === 'completed') {
       res.json({ message: 'Withdrawal initiated successfully', reference });
     } else {
       res.status(400).json({ error: 'Transfer failed. Please try again or contact support.' });
     }
   } catch (err) {
-    await client.query('ROLLBACK');
     console.error('Withdraw error:', err.message);
     res.status(500).json({ error: 'Withdrawal failed. Please try again.' });
-  } finally {
-    client.release();
   }
 });
 
 router.get('/transactions', auth, async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50`,
-      [req.userId]
-    );
-    res.json(rows);
+    const transactions = await Transaction.find({ user_id: req.userId })
+      .sort({ created_at: -1 })
+      .limit(50);
+
+    res.json(transactions);
   } catch (err) {
+    console.error('Get transactions error:', err);
     res.status(500).json({ error: 'Failed to fetch transactions' });
   }
 });

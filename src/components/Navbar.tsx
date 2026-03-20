@@ -46,8 +46,6 @@ export default function Navbar() {
     navigate("/");
   };
 
-  const av = AVATAR_MAP[user?.profile_picture || "avatar1"];
-
   return (
     <motion.nav
       initial={{ y: -80, opacity: 0 }}
@@ -111,7 +109,7 @@ export default function Navbar() {
                 <>
                   <Button variant="ghost" size="sm" asChild>
                     <Link to="/dashboard" className="flex items-center gap-2">
-                      <div className={`w-6 h-6 rounded-full ${av.bg} flex items-center justify-center text-xs`}>{av.icon}</div>
+                      <ProfileAvatar src={user?.profile_picture} size="sm" />
                       Dashboard
                     </Link>
                   </Button>
@@ -158,8 +156,11 @@ export default function Navbar() {
               <div className="flex gap-3 pt-2">
                 {user ? (
                   <>
-                    <Button variant="outline" size="sm" className="flex-1" asChild>
-                      <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+                    <Button variant="outline" size="sm" className="flex-1 gap-2" asChild>
+                      <Link to="/dashboard" onClick={() => setMenuOpen(false)}>
+                        <ProfileAvatar src={user?.profile_picture} size="sm" />
+                        Dashboard
+                      </Link>
                     </Button>
                     <Button size="sm" className="flex-1 bg-primary text-primary-foreground" onClick={() => { handleLogout(); setMenuOpen(false); }}>
                       Log out

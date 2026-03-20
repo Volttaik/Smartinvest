@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { User, Transaction } = require('../../models/index.cjs');
 const connectDB = require('../../lib/db.cjs');
 const { verifyToken, send } = require('../../lib/auth-utils.cjs');
@@ -7,6 +8,8 @@ module.exports = async function handler(req, res) {
   try {
     const userId = await verifyToken(req);
     await connectDB();
+
+    const userObjId = new mongoose.Types.ObjectId(userId);
 
     const user = await User.findById(userId).select('referral_code referral_earnings');
     if (!user) return send(res, 404, { error: 'User not found' });
@@ -18,7 +21,7 @@ module.exports = async function handler(req, res) {
 
     for (const refUser of referred) {
       const investmentTotal = await Transaction.aggregate([
-        { $match: { user_id: refUser._id, type: 'investment', status: 'completed' } },
+        { $match: { user_id: new mongoose.Types.ObjectId(refUser._id), type: 'investment', status: 'completed' } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]);
       refUser.total_invested = investmentTotal[0]?.total || 0;

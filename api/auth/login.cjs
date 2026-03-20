@@ -15,11 +15,21 @@ module.exports = async function handler(req, res) {
     }
 
     const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return send(res, 400, { error: 'Invalid email or password' });
-    if (!user.is_active) return send(res, 403, { error: 'Account suspended. Contact support.' });
+    if (!user) {
+      return send(res, 400, { error: 'No account found with that email address' });
+    }
+    if (!user.is_active) {
+      return send(res, 403, { error: 'Account suspended. Contact support.' });
+    }
+
+    if (!user.password_hash) {
+      return send(res, 400, { error: 'Invalid email or password' });
+    }
 
     const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) return send(res, 400, { error: 'Invalid email or password' });
+    if (!valid) {
+      return send(res, 400, { error: 'Incorrect password. Please try again.' });
+    }
 
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
     send(res, 200, {

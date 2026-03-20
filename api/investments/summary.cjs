@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { Investment } = require('../../models/index.cjs');
 const connectDB = require('../../lib/db.cjs');
 const { verifyToken, send } = require('../../lib/auth-utils.cjs');
@@ -7,8 +8,11 @@ module.exports = async function handler(req, res) {
   try {
     const userId = await verifyToken(req);
     await connectDB();
+
+    const userObjId = new mongoose.Types.ObjectId(userId);
+
     const result = await Investment.aggregate([
-      { $match: { user_id: userId } },
+      { $match: { user_id: userObjId } },
       {
         $group: {
           _id: null,

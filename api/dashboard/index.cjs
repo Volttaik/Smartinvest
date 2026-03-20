@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { User, Investment, Transaction, Trade } = require('../../models/index.cjs');
 const connectDB = require('../../lib/db.cjs');
 const { verifyToken, send } = require('../../lib/auth-utils.cjs');
@@ -8,13 +9,15 @@ module.exports = async function handler(req, res) {
     const userId = await verifyToken(req);
     await connectDB();
 
+    const userObjId = new mongoose.Types.ObjectId(userId);
+
     const user = await User.findById(userId).select(
       'id username email profile_picture balance referral_code referral_earnings total_earnings created_at'
     );
     if (!user) return send(res, 404, { error: 'User not found' });
 
     const invSummary = await Investment.aggregate([
-      { $match: { user_id: userId } },
+      { $match: { user_id: userObjId } },
       {
         $group: {
           _id: null,
@@ -39,7 +42,7 @@ module.exports = async function handler(req, res) {
     const referredCount = await User.countDocuments({ referred_by: userId });
 
     const monthlyData = await Transaction.aggregate([
-      { $match: { user_id: userId, created_at: { $gt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) } } },
+      { $match: { user_id: userObjId, created_at: { $gt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) } } },
       {
         $group: {
           _id: { year: { $year: '$created_at' }, month: { $month: '$created_at' } },
@@ -68,6 +71,7 @@ module.exports = async function handler(req, res) {
       chartData
     });
   } catch (err) {
+    console.error('Dashboard error:', err);
     send(res, err.status || 500, { error: err.message || 'Failed to fetch dashboard data' });
   }
 };

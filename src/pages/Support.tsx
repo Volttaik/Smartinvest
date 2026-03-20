@@ -87,7 +87,7 @@ export default function Support() {
                 className="flex flex-col items-center justify-center text-center p-10 rounded-2xl bg-green-50 border border-green-200">
                 <CheckCircle className="w-12 h-12 text-green-600 mb-4" />
                 <h3 className="font-semibold text-lg text-green-800 mb-2">Message Sent!</h3>
-                <p className="text-sm text-green-700">We'll get back to you within 24 hours.</p>
+                <p className="text-sm text-green-700">We&apos;ll get back to you within 24 hours.</p>
                 <button onClick={() => setSubmitted(false)} className="mt-4 text-sm text-primary hover:underline">Send another message</button>
               </motion.div>
             ) : (

@@ -90,7 +90,7 @@ export default function Testimonials() {
                 </span>
               </div>
 
-              <p className="text-muted-foreground text-sm leading-relaxed mb-7">"{text}"</p>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-7">&ldquo;{text}&rdquo;</p>
 
               <div className="flex items-center gap-3 pt-5 border-t border-border">
                 <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center text-white text-sm font-bold flex-shrink-0`}>

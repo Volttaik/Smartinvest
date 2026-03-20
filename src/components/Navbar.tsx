@@ -34,8 +34,8 @@ export default function Navbar() {
   const router = useRouter();
   const { user, logout } = useAuth();
 
-  const isAuthPage = ["/login", "/register"].includes(pathname);
-  const isLegalPage = ["/support", "/privacy", "/terms"].includes(pathname);
+  const isAuthPage = ["/login", "/register"].includes(pathname ?? "");
+  const isLegalPage = ["/support", "/privacy", "/terms"].includes(pathname ?? "");
   const isSpecialPage = isAuthPage || isLegalPage;
 
   useEffect(() => {

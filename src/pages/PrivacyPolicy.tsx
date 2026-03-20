@@ -55,7 +55,7 @@ export default function PrivacyPolicy() {
           <h1 className="font-display text-4xl font-bold text-foreground mb-3">Privacy Policy</h1>
           <p className="text-muted-foreground mb-2">Effective Date: January 1, 2025</p>
           <p className="text-muted-foreground text-sm mb-10 leading-relaxed">
-            This Privacy Policy describes how SmartInvest ("we", "our", or "the Platform") collects, uses, and protects your personal information when you use our services.
+            This Privacy Policy describes how SmartInvest (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;the Platform&rdquo;) collects, uses, and protects your personal information when you use our services.
           </p>
 
           <div className="space-y-8">

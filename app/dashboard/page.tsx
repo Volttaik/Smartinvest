@@ -1239,54 +1239,64 @@ export default function Dashboard() {
               </button>
               <AnimatePresence>
                 {bellOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                    transition={{ duration: 0.18 }}
-                    className="absolute right-0 top-full mt-2 w-80 border border-border rounded-2xl z-50 overflow-hidden" style={{ backgroundColor: '#ffffff', boxShadow: '0 20px 60px rgba(0,0,0,0.18)', backdropFilter: 'none' }}>
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                      <span className="font-semibold text-sm">Notifications</span>
-                      <button onClick={() => setBellOpen(false)} className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="max-h-80 overflow-y-auto divide-y divide-border">
-                      {notifications.slice(0, 8).length === 0 ? (
-                        <div className="py-8 text-center text-sm text-muted-foreground">No notifications yet</div>
-                      ) : notifications.slice(0, 8).map((n: any) => (
-                        <div key={n._id} className={`px-4 py-3 ${n.read ? '' : 'bg-primary/5'}`}>
-                          <div className="flex items-start gap-2.5">
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                              n.type === 'login' ? 'bg-blue-100' :
-                              n.type === 'deposit' ? 'bg-emerald-100' :
-                              n.type === 'withdrawal' ? 'bg-amber-100' :
-                              n.type === 'investment' ? 'bg-violet-100' : 'bg-muted'
-                            }`}>
-                              {n.type === 'login' && <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />}
-                              {n.type === 'deposit' && <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />}
-                              {n.type === 'withdrawal' && <CreditCard className="w-3.5 h-3.5 text-amber-600" />}
-                              {n.type === 'investment' && <TrendingUp className="w-3.5 h-3.5 text-violet-600" />}
-                              {!['login','deposit','withdrawal','investment'].includes(n.type) && <Bell className="w-3.5 h-3.5 text-muted-foreground" />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-[12px] font-semibold text-foreground">{n.title}</div>
-                              <div className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{n.message}</div>
-                              <div className="text-[10px] text-muted-foreground/60 mt-1">
-                                {new Date(n.created_at).toLocaleString('en-NG', { dateStyle: 'short', timeStyle: 'short' })}
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.18 }}
+                      className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+                      onClick={() => setBellOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                      transition={{ duration: 0.18 }}
+                      className="fixed right-4 top-16 w-80 rounded-2xl z-50 overflow-hidden border border-gray-200 shadow-2xl bg-white">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                        <span className="font-semibold text-sm text-gray-900">Notifications</span>
+                        <button onClick={() => setBellOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                        {notifications.slice(0, 8).length === 0 ? (
+                          <div className="py-8 text-center text-sm text-gray-400">No notifications yet</div>
+                        ) : notifications.slice(0, 8).map((n: any) => (
+                          <div key={n._id} className={`px-4 py-3 ${n.read ? 'bg-white' : 'bg-red-50'}`}>
+                            <div className="flex items-start gap-2.5">
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                                n.type === 'login' ? 'bg-blue-100' :
+                                n.type === 'deposit' ? 'bg-emerald-100' :
+                                n.type === 'withdrawal' ? 'bg-amber-100' :
+                                n.type === 'investment' ? 'bg-violet-100' : 'bg-gray-100'
+                              }`}>
+                                {n.type === 'login' && <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />}
+                                {n.type === 'deposit' && <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />}
+                                {n.type === 'withdrawal' && <CreditCard className="w-3.5 h-3.5 text-amber-600" />}
+                                {n.type === 'investment' && <TrendingUp className="w-3.5 h-3.5 text-violet-600" />}
+                                {!['login','deposit','withdrawal','investment'].includes(n.type) && <Bell className="w-3.5 h-3.5 text-gray-400" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[12px] font-semibold text-gray-900">{n.title}</div>
+                                <div className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">{n.message}</div>
+                                <div className="text-[10px] text-gray-400 mt-1">
+                                  {new Date(n.created_at).toLocaleString('en-NG', { dateStyle: 'short', timeStyle: 'short' })}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="px-4 py-2.5 border-t border-border">
-                      <button onClick={() => { setBellOpen(false); setActiveTab("notifications"); }}
-                        className="text-xs text-primary font-semibold hover:underline">
-                        View all notifications →
-                      </button>
-                    </div>
-                  </motion.div>
+                        ))}
+                      </div>
+                      <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50">
+                        <button onClick={() => { setBellOpen(false); setActiveTab("notifications"); }}
+                          className="text-xs text-primary font-semibold hover:underline">
+                          View all notifications →
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
                 )}
               </AnimatePresence>
             </div>

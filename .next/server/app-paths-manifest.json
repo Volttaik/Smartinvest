@@ -1,8 +1,4 @@
 {
   "/page": "app/page.js",
-  "/login/page": "app/login/page.js",
-  "/louisisloarddevatron/page": "app/louisisloarddevatron/page.js",
-  "/api/louisisloarddevatron/auth/route": "app/api/louisisloarddevatron/auth/route.js",
-  "/api/admin/stats/route": "app/api/admin/stats/route.js",
-  "/api/admin/users/route": "app/api/admin/users/route.js"
+  "/api/packages/route": "app/api/packages/route.js"
 }

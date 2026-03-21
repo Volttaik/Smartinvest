@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
+import { Notification } from '@/lib/models/Notification';
 import { signToken } from '@/lib/server-auth';
 
 export async function POST(req: NextRequest) {
@@ -21,6 +22,13 @@ export async function POST(req: NextRequest) {
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return NextResponse.json({ error: 'Incorrect password. Please try again.' }, { status: 400 });
 
+    await Notification.create({
+      user_id: user._id,
+      type: 'login',
+      title: 'New Sign-In',
+      message: `You signed in to your SmartInvest account. ${new Date().toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' })}`,
+    });
+
     const token = signToken(String(user._id));
     return NextResponse.json({
       token,
@@ -31,6 +39,7 @@ export async function POST(req: NextRequest) {
         profile_picture: user.profile_picture,
         balance: user.balance,
         referral_code: user.referral_code,
+        profile_completed: user.profile_completed ?? false,
       },
     });
   } catch (err: any) {

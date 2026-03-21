@@ -13,6 +13,8 @@ import {
   ChevronLeft, ChevronRight, Target, Layers, DollarSign, Bell,
   ArrowDownLeft, Plus, Minus, Clock, Star, PieChartIcon, Gem,
   Coins, LineChart, Flame,
+  UserCircle, BellRing, ChevronDown, Search, CheckCheck,
+  CalendarDays, Phone, MapPin, FileText, ShieldCheck, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,18 +28,23 @@ const AVATAR_COLORS = [
 ];
 const AVATAR_ICONS = [TrendingUp, BarChart3, Activity, Zap, Wallet, CreditCard, ArrowUpRight, Star];
 
-function AvatarIcon({ picture }: { picture?: string }) {
+function AvatarIcon({ picture, size = "md" }: { picture?: string; size?: "sm" | "md" | "lg" }) {
   const idx = Math.abs((picture || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % AVATAR_COLORS.length;
   const Icon = AVATAR_ICONS[idx];
+  const dim = size === "lg" ? "w-16 h-16" : size === "sm" ? "w-7 h-7" : "w-9 h-9";
+  const icon = size === "lg" ? "w-7 h-7" : size === "sm" ? "w-3 h-3" : "w-4 h-4";
+  if (picture && picture.startsWith("data:image/")) {
+    return <img src={picture} alt="Avatar" className={`${dim} rounded-full object-cover shrink-0`} />;
+  }
   return (
-    <div className={`w-9 h-9 rounded-full ${AVATAR_COLORS[idx]} flex items-center justify-center shrink-0`}>
-      <Icon className="w-4 h-4 text-white" />
+    <div className={`${dim} rounded-full ${AVATAR_COLORS[idx]} flex items-center justify-center shrink-0`}>
+      <Icon className={`${icon} text-white`} />
     </div>
   );
 }
 
 const PIE_COLORS = ["hsl(var(--primary))", "#3b82f6", "#10b981", "#8b5cf6", "#f97316"];
-type Tab = "overview" | "invest" | "transactions" | "referrals" | "fund" | "withdraw" | "portfolio" | "assets";
+type Tab = "overview" | "invest" | "transactions" | "referrals" | "fund" | "withdraw" | "portfolio" | "assets" | "profile" | "notifications";
 declare const PaystackPop: any;
 
 /* ─────────────────────────────────────────
@@ -799,6 +806,16 @@ export default function Dashboard() {
   const [tierFilter, setTierFilter] = useState("All");
   const [authChecked, setAuthChecked] = useState(false);
 
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [bellOpen, setBellOpen] = useState(false);
+  const [banks, setBanks] = useState<any[]>([]);
+  const [resolving, setResolving] = useState(false);
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    date_of_birth: "", gender: "", address: "", phone: "", bio: "", nin: ""
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+
   const authHeaders = () => {
     const tok = localStorage.getItem('si_token');
     return { 'Content-Type': 'application/json', ...(tok ? { Authorization: `Bearer ${tok}` } : {}) };
@@ -827,6 +844,42 @@ export default function Dashboard() {
   }, [router]);
 
   useEffect(() => { if (authChecked) loadDashboard(); }, [authChecked, loadDashboard]);
+
+  useEffect(() => {
+    if (authChecked) {
+      fetch('/api/notifications', { headers: authHeaders() })
+        .then(r => r.json()).then(data => { if (Array.isArray(data)) setNotifications(data); })
+        .catch(() => {});
+    }
+  }, [authChecked]);
+
+  useEffect(() => {
+    if (authChecked && user && user.profile_completed === false) {
+      setShowProfileSetup(true);
+    }
+  }, [authChecked, user]);
+
+  useEffect(() => {
+    if (activeTab === "withdraw" && banks.length === 0) {
+      fetch('/api/banks').then(r => r.json())
+        .then(d => { if (d.banks) setBanks(d.banks); })
+        .catch(() => {});
+    }
+  }, [activeTab, banks.length]);
+
+  useEffect(() => {
+    const { accountNumber, bankCode } = withdrawForm;
+    if (accountNumber.length === 10 && bankCode) {
+      setResolving(true);
+      fetch(`/api/banks/resolve?account_number=${accountNumber}&bank_code=${bankCode}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.account_name) setWithdrawForm(f => ({ ...f, accountName: d.account_name }));
+        })
+        .catch(() => {})
+        .finally(() => setResolving(false));
+    }
+  }, [withdrawForm.accountNumber, withdrawForm.bankCode]);
 
   useEffect(() => {
     if (activeTab === "invest" && packages.length === 0) {
@@ -907,6 +960,22 @@ export default function Dashboard() {
     }
   };
 
+  const handleSaveProfile = async () => {
+    setProfileSaving(true);
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PUT', headers: authHeaders(),
+        body: JSON.stringify(profileForm),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setShowProfileSetup(false);
+      refreshUser();
+    } catch (err: any) {
+      showNotif("error", err.message || "Could not save profile.");
+    } finally { setProfileSaving(false); }
+  };
+
   const handleWithdraw = async () => {
     setWithdrawLoading(true);
     try {
@@ -919,6 +988,8 @@ export default function Dashboard() {
       showNotif("success", "Withdrawal initiated!");
       setWithdrawForm({ amount: "", accountName: "", accountNumber: "", bankCode: "", bankName: "" });
       await loadDashboard(); await refreshUser();
+      fetch('/api/notifications', { headers: authHeaders() })
+        .then(r => r.json()).then(d => { if (Array.isArray(d)) setNotifications(d); }).catch(() => {});
     } catch (err: any) {
       showNotif("error", err.message || "Withdrawal failed.");
     } finally { setWithdrawLoading(false); }
@@ -943,15 +1014,19 @@ export default function Dashboard() {
     return "Good evening";
   })();
 
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   const navItems = [
-    { id: "overview",      icon: BarChart3,      label: "Home" },
-    { id: "portfolio",     icon: PieChartIcon,   label: "Portfolio" },
-    { id: "assets",        icon: Gem,            label: "Assets" },
-    { id: "invest",        icon: Package,        label: "Invest" },
-    { id: "transactions",  icon: Activity,       label: "Transactions" },
-    { id: "referrals",     icon: Zap,            label: "Referrals" },
-    { id: "fund",          icon: Wallet,         label: "Fund Wallet" },
-    { id: "withdraw",      icon: CreditCard,     label: "Withdraw" },
+    { id: "overview",       icon: BarChart3,     label: "Home" },
+    { id: "portfolio",      icon: PieChartIcon,  label: "Portfolio" },
+    { id: "assets",         icon: Gem,           label: "Assets" },
+    { id: "invest",         icon: Package,       label: "Invest" },
+    { id: "transactions",   icon: Activity,      label: "Transactions" },
+    { id: "referrals",      icon: Zap,           label: "Referrals" },
+    { id: "fund",           icon: Wallet,        label: "Fund Wallet" },
+    { id: "withdraw",       icon: CreditCard,    label: "Withdraw" },
+    { id: "notifications",  icon: BellRing,      label: "Notifications", badge: unreadCount },
+    { id: "profile",        icon: UserCircle,    label: "Profile" },
   ] as const;
 
   const currentNav = navItems.find(n => n.id === activeTab);
@@ -994,16 +1069,24 @@ export default function Dashboard() {
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {navItems.map(({ id, icon: Icon, label }) => (
-            <button key={id} onClick={() => { setActiveTab(id); setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all relative
-                ${activeTab === id
-                  ? "bg-primary text-white shadow-sm"
-                  : "text-white/55 hover:text-white hover:bg-white/8"}`}>
-              <Icon className="w-4 h-4 shrink-0" />
-              {label}
-            </button>
-          ))}
+          {navItems.map(({ id, icon: Icon, label, ...rest }) => {
+            const badge = (rest as any).badge;
+            return (
+              <button key={id} onClick={() => { setActiveTab(id as Tab); setSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all relative
+                  ${activeTab === id
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-white/55 hover:text-white hover:bg-white/8"}`}>
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="flex-1 text-left">{label}</span>
+                {badge > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                    {badge > 9 ? '9+' : badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="p-4 border-t border-white/10 space-y-3">
@@ -1057,13 +1140,78 @@ export default function Dashboard() {
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:brightness-110 transition-all">
               <Plus className="w-3.5 h-3.5" /> Add Funds
             </button>
-            <button onClick={loadDashboard}
+            <button onClick={() => window.location.reload()}
               className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               <RefreshCw className="w-4 h-4" />
             </button>
-            <button className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-              <Bell className="w-4 h-4" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setBellOpen(v => !v);
+                  if (!bellOpen && unreadCount > 0) {
+                    fetch('/api/notifications', { method: 'PATCH', headers: authHeaders() }).catch(() => {});
+                    setNotifications(n => n.map(x => ({ ...x, read: true })));
+                  }
+                }}
+                className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
+                )}
+              </button>
+              <AnimatePresence>
+                {bellOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    transition={{ duration: 0.18 }}
+                    className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                      <span className="font-semibold text-sm">Notifications</span>
+                      <button onClick={() => setBellOpen(false)} className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto divide-y divide-border">
+                      {notifications.slice(0, 8).length === 0 ? (
+                        <div className="py-8 text-center text-sm text-muted-foreground">No notifications yet</div>
+                      ) : notifications.slice(0, 8).map((n: any) => (
+                        <div key={n._id} className={`px-4 py-3 ${n.read ? '' : 'bg-primary/5'}`}>
+                          <div className="flex items-start gap-2.5">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                              n.type === 'login' ? 'bg-blue-100' :
+                              n.type === 'deposit' ? 'bg-emerald-100' :
+                              n.type === 'withdrawal' ? 'bg-amber-100' :
+                              n.type === 'investment' ? 'bg-violet-100' : 'bg-muted'
+                            }`}>
+                              {n.type === 'login' && <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />}
+                              {n.type === 'deposit' && <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />}
+                              {n.type === 'withdrawal' && <CreditCard className="w-3.5 h-3.5 text-amber-600" />}
+                              {n.type === 'investment' && <TrendingUp className="w-3.5 h-3.5 text-violet-600" />}
+                              {!['login','deposit','withdrawal','investment'].includes(n.type) && <Bell className="w-3.5 h-3.5 text-muted-foreground" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[12px] font-semibold text-foreground">{n.title}</div>
+                              <div className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{n.message}</div>
+                              <div className="text-[10px] text-muted-foreground/60 mt-1">
+                                {new Date(n.created_at).toLocaleString('en-NG', { dateStyle: 'short', timeStyle: 'short' })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="px-4 py-2.5 border-t border-border">
+                      <button onClick={() => { setBellOpen(false); setActiveTab("notifications"); }}
+                        className="text-xs text-primary font-semibold hover:underline">
+                        View all notifications →
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             <div className="flex items-center gap-2 pl-1 border-l border-border ml-1">
               <AvatarIcon picture={user?.profile_picture} />
               <span className="hidden sm:block text-xs font-semibold text-foreground truncate max-w-[80px]">{user?.username}</span>
@@ -1629,25 +1777,68 @@ export default function Dashboard() {
                       <p className="text-sm text-muted-foreground mt-0.5">Processed within 1–3 business days</p>
                     </div>
 
-                    {[
-                      { key: "amount",        label: "Amount (₦)",    placeholder: "Enter amount", type: "number",  prefix: "₦" },
-                      { key: "accountName",   label: "Account Name",  placeholder: "Full account holder name", type: "text" },
-                      { key: "accountNumber", label: "Account Number", placeholder: "10-digit NUBAN number", type: "text" },
-                      { key: "bankName",      label: "Bank Name",     placeholder: "e.g. First Bank, GTBank", type: "text" },
-                      { key: "bankCode",      label: "Bank Code",     placeholder: "3-digit bank code", type: "text" },
-                    ].map(({ key, label, placeholder, type, prefix }) => (
-                      <div key={key}>
-                        <label className="text-sm font-medium block mb-1.5">{label}</label>
-                        <div className="relative">
-                          {prefix && <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm">{prefix}</span>}
-                          <input type={type} placeholder={placeholder}
-                            value={(withdrawForm as any)[key]}
-                            onChange={e => setWithdrawForm(f => ({ ...f, [key]: e.target.value }))}
-                            className={`w-full h-11 ${prefix ? 'pl-8' : 'pl-4'} pr-4 rounded-xl border border-border bg-background text-foreground text-sm
-                              focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all placeholder:text-muted-foreground`} />
-                        </div>
+                    {/* Amount */}
+                    <div>
+                      <label className="text-sm font-medium block mb-1.5">Amount (₦)</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm">₦</span>
+                        <input type="number" placeholder="Enter amount"
+                          value={withdrawForm.amount}
+                          onChange={e => setWithdrawForm(f => ({ ...f, amount: e.target.value }))}
+                          className="w-full h-11 pl-8 pr-4 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all placeholder:text-muted-foreground" />
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Bank dropdown */}
+                    <div>
+                      <label className="text-sm font-medium block mb-1.5">Select Bank</label>
+                      <div className="relative">
+                        <select
+                          value={withdrawForm.bankCode}
+                          onChange={e => {
+                            const bank = banks.find((b: any) => b.code === e.target.value);
+                            setWithdrawForm(f => ({ ...f, bankCode: e.target.value, bankName: bank?.name || '', accountName: '' }));
+                          }}
+                          className="w-full h-11 pl-4 pr-10 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all appearance-none">
+                          <option value="">-- Select your bank --</option>
+                          {banks.map((b: any) => (
+                            <option key={b.code} value={b.code}>{b.name}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                      </div>
+                    </div>
+
+                    {/* Account Number */}
+                    <div>
+                      <label className="text-sm font-medium block mb-1.5">Account Number</label>
+                      <input type="text" maxLength={10} placeholder="10-digit NUBAN number"
+                        value={withdrawForm.accountNumber}
+                        onChange={e => {
+                          setWithdrawForm(f => ({ ...f, accountNumber: e.target.value, accountName: '' }));
+                        }}
+                        className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all placeholder:text-muted-foreground" />
+                    </div>
+
+                    {/* Auto-resolved account name */}
+                    <AnimatePresence>
+                      {(resolving || withdrawForm.accountName) && (
+                        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                          className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                          {resolving ? (
+                            <>
+                              <span className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                              <span className="text-sm text-emerald-700">Resolving account…</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <span className="text-sm font-semibold text-emerald-800">{withdrawForm.accountName}</span>
+                            </>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
                     <AnimatePresence>
                       {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 && (
@@ -1656,10 +1847,10 @@ export default function Dashboard() {
                           className={`p-3 rounded-xl text-xs border ${
                             parseFloat(withdrawForm.amount) > balance
                               ? 'bg-red-50 border-red-200 text-red-700'
-                              : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                              : 'bg-blue-50 border-blue-200 text-blue-700'
                           }`}>
                           {parseFloat(withdrawForm.amount) > balance
-                            ? '⚠ Amount exceeds your available balance'
+                            ? 'Amount exceeds your available balance'
                             : `Withdrawing ₦${parseFloat(withdrawForm.amount).toLocaleString()} · Remaining: ₦${(balance - parseFloat(withdrawForm.amount)).toLocaleString()}`}
                         </motion.div>
                       )}
@@ -1667,7 +1858,8 @@ export default function Dashboard() {
 
                     <Button onClick={handleWithdraw}
                       disabled={withdrawLoading || !withdrawForm.amount || !withdrawForm.accountName
-                        || !withdrawForm.accountNumber || parseFloat(withdrawForm.amount) > balance || parseFloat(withdrawForm.amount) <= 0}
+                        || !withdrawForm.accountNumber || !withdrawForm.bankCode
+                        || parseFloat(withdrawForm.amount) > balance || parseFloat(withdrawForm.amount) <= 0}
                       className="w-full h-12 bg-primary text-white rounded-xl font-semibold hover:brightness-110 transition-all">
                       {withdrawLoading
                         ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Processing…</span>
@@ -1677,10 +1869,206 @@ export default function Dashboard() {
                 </motion.div>
               )}
 
+              {activeTab === "notifications" && (
+                <motion.div key="notifications"
+                  initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.28 }} className="p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-bold text-lg">All Notifications</h2>
+                    {notifications.some(n => !n.read) && (
+                      <button
+                        onClick={() => {
+                          fetch('/api/notifications', { method: 'PATCH', headers: authHeaders() }).catch(() => {});
+                          setNotifications(n => n.map(x => ({ ...x, read: true })));
+                        }}
+                        className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline">
+                        <CheckCheck className="w-3.5 h-3.5" /> Mark all read
+                      </button>
+                    )}
+                  </div>
+                  {notifications.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                      <BellRing className="w-12 h-12 mb-3 opacity-20" />
+                      <p className="text-sm">No notifications yet</p>
+                      <p className="text-xs mt-1">Activity like logins and transactions will appear here</p>
+                    </div>
+                  ) : (
+                    <div className="bg-card border border-border rounded-2xl overflow-hidden divide-y divide-border">
+                      {notifications.map((n: any) => (
+                        <div key={n._id} className={`p-4 flex items-start gap-3 ${n.read ? '' : 'bg-primary/5'}`}>
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                            n.type === 'login' ? 'bg-blue-100' :
+                            n.type === 'deposit' ? 'bg-emerald-100' :
+                            n.type === 'withdrawal' ? 'bg-amber-100' :
+                            n.type === 'investment' ? 'bg-violet-100' : 'bg-muted'
+                          }`}>
+                            {n.type === 'login' && <ShieldCheck className="w-4 h-4 text-blue-600" />}
+                            {n.type === 'deposit' && <ArrowDownLeft className="w-4 h-4 text-emerald-600" />}
+                            {n.type === 'withdrawal' && <CreditCard className="w-4 h-4 text-amber-600" />}
+                            {n.type === 'investment' && <TrendingUp className="w-4 h-4 text-violet-600" />}
+                            {!['login','deposit','withdrawal','investment'].includes(n.type) && <Bell className="w-4 h-4 text-muted-foreground" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-semibold text-foreground">{n.title}</span>
+                              {!n.read && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">{n.message}</p>
+                            <p className="text-[11px] text-muted-foreground/60 mt-1.5">
+                              {new Date(n.created_at).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' })}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {activeTab === "profile" && (
+                <motion.div key="profile"
+                  initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.28 }} className="p-5 space-y-5">
+
+                  <div className="bg-gradient-to-br from-foreground to-foreground/90 rounded-3xl p-6 text-white flex items-center gap-4">
+                    <AvatarIcon picture={user?.profile_picture} size="lg" />
+                    <div>
+                      <h2 className="text-2xl font-bold font-display">{user?.username}</h2>
+                      <p className="text-white/50 text-sm mt-0.5">{user?.email}</p>
+                      <p className="text-white/40 text-xs mt-1">Referral: {user?.referral_code}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+                    <h3 className="font-semibold text-base">Personal Information</h3>
+                    {[
+                      { key: "date_of_birth", label: "Date of Birth",   placeholder: "YYYY-MM-DD", icon: CalendarDays, type: "date" },
+                      { key: "phone",         label: "Phone Number",    placeholder: "+234 800 000 0000", icon: Phone,       type: "tel" },
+                      { key: "gender",        label: "Gender",          placeholder: "", icon: UserCircle, type: "select" },
+                      { key: "address",       label: "Home Address",    placeholder: "Street, City, State", icon: MapPin,      type: "text" },
+                      { key: "nin",           label: "NIN",             placeholder: "11-digit NIN", icon: ShieldCheck, type: "text" },
+                      { key: "bio",           label: "Bio",             placeholder: "Tell us a bit about yourself", icon: FileText,   type: "textarea" },
+                    ].map(({ key, label, placeholder, icon: Icon, type }) => (
+                      <div key={key}>
+                        <label className="text-sm font-medium flex items-center gap-1.5 mb-1.5">
+                          <Icon className="w-3.5 h-3.5 text-muted-foreground" />{label}
+                        </label>
+                        {type === "select" ? (
+                          <div className="relative">
+                            <select value={(profileForm as any)[key] || (user as any)?.[key] || ""}
+                              onChange={e => setProfileForm(f => ({ ...f, [key]: e.target.value }))}
+                              className="w-full h-11 pl-4 pr-10 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 appearance-none">
+                              <option value="">Select gender</option>
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
+                              <option value="other">Prefer not to say</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                          </div>
+                        ) : type === "textarea" ? (
+                          <textarea rows={3} placeholder={placeholder}
+                            value={(profileForm as any)[key] || (user as any)?.[key] || ""}
+                            onChange={e => setProfileForm(f => ({ ...f, [key]: e.target.value }))}
+                            className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all placeholder:text-muted-foreground resize-none" />
+                        ) : (
+                          <input type={type} placeholder={placeholder}
+                            value={(profileForm as any)[key] || (user as any)?.[key] || ""}
+                            onChange={e => setProfileForm(f => ({ ...f, [key]: e.target.value }))}
+                            className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all placeholder:text-muted-foreground" />
+                        )}
+                      </div>
+                    ))}
+                    <Button onClick={handleSaveProfile} disabled={profileSaving}
+                      className="w-full h-11 bg-primary text-white rounded-xl font-semibold hover:brightness-110 transition-all">
+                      {profileSaving
+                        ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</span>
+                        : <span className="flex items-center gap-2"><Check className="w-4 h-4" />Save Profile</span>}
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
             </AnimatePresence>
           )}
         </main>
       </div>
+
+      {/* Profile Setup Modal — shown on first login */}
+      <AnimatePresence>
+        {showProfileSetup && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-card rounded-3xl w-full max-w-md shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+              <div className="bg-gradient-to-br from-foreground to-foreground/90 p-6 text-white">
+                <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center mb-4">
+                  <UserCircle className="w-6 h-6 text-primary" />
+                </div>
+                <h2 className="font-display text-2xl font-bold mb-1">Tell us about you</h2>
+                <p className="text-white/60 text-sm">Complete your profile to personalize your experience. You can update this anytime.</p>
+              </div>
+
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                {[
+                  { key: "date_of_birth", label: "Date of Birth",  icon: CalendarDays, type: "date",     placeholder: "" },
+                  { key: "phone",         label: "Phone Number",   icon: Phone,        type: "tel",      placeholder: "+234 800 000 0000" },
+                  { key: "gender",        label: "Gender",         icon: UserCircle,   type: "select",   placeholder: "" },
+                  { key: "address",       label: "Home Address",   icon: MapPin,       type: "text",     placeholder: "Street, City, State" },
+                  { key: "nin",           label: "NIN",            icon: ShieldCheck,  type: "text",     placeholder: "11-digit NIN" },
+                  { key: "bio",           label: "Short Bio",      icon: FileText,     type: "textarea", placeholder: "A little about yourself…" },
+                ].map(({ key, label, icon: Icon, type, placeholder }) => (
+                  <div key={key}>
+                    <label className="text-sm font-medium flex items-center gap-1.5 mb-1.5">
+                      <Icon className="w-3.5 h-3.5 text-muted-foreground" />{label}
+                    </label>
+                    {type === "select" ? (
+                      <div className="relative">
+                        <select value={(profileForm as any)[key]}
+                          onChange={e => setProfileForm(f => ({ ...f, [key]: e.target.value }))}
+                          className="w-full h-11 pl-4 pr-10 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 appearance-none">
+                          <option value="">Select gender</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Prefer not to say</option>
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                      </div>
+                    ) : type === "textarea" ? (
+                      <textarea rows={2} placeholder={placeholder}
+                        value={(profileForm as any)[key]}
+                        onChange={e => setProfileForm(f => ({ ...f, [key]: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all placeholder:text-muted-foreground resize-none" />
+                    ) : (
+                      <input type={type} placeholder={placeholder}
+                        value={(profileForm as any)[key]}
+                        onChange={e => setProfileForm(f => ({ ...f, [key]: e.target.value }))}
+                        className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all placeholder:text-muted-foreground" />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-6 border-t border-border flex gap-3">
+                <button onClick={() => setShowProfileSetup(false)}
+                  className="flex-1 h-11 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
+                  Skip for now
+                </button>
+                <Button onClick={handleSaveProfile} disabled={profileSaving}
+                  className="flex-1 h-11 bg-primary text-white rounded-xl font-semibold hover:brightness-110">
+                  {profileSaving
+                    ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</span>
+                    : "Save Profile"}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

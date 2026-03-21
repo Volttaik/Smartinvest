@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 import { Transaction } from '@/lib/models/Transaction';
+import { Notification } from '@/lib/models/Notification';
 import { verifyToken } from '@/lib/server-auth';
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
     const { amount, accountName, accountNumber, bankCode, bankName } = await req.json();
 
     if (!amount || !accountName || !accountNumber || !bankCode) {
-      return NextResponse.json({ error: 'Amount, account name, number, and bank code are required' }, { status: 400 });
+      return NextResponse.json({ error: 'Amount, account name, number, and bank are required' }, { status: 400 });
     }
     if (amount < MIN_WITHDRAWAL) {
       return NextResponse.json({ error: `Minimum withdrawal is ₦${MIN_WITHDRAWAL.toLocaleString()}` }, { status: 400 });
@@ -57,6 +58,15 @@ export async function POST(req: NextRequest) {
       user_id: userId, type: 'withdrawal', amount,
       description: `Withdrawal to ${bankName} - ${accountNumber}`,
       status, reference, metadata: { accountName, accountNumber, bankName, bankCode },
+    });
+
+    await Notification.create({
+      user_id: userId,
+      type: 'withdrawal',
+      title: status === 'completed' ? 'Withdrawal Initiated' : 'Withdrawal Failed',
+      message: status === 'completed'
+        ? `Your withdrawal of ₦${parseFloat(amount).toLocaleString()} to ${bankName} (${accountNumber}) has been initiated and is being processed.`
+        : `Your withdrawal request of ₦${parseFloat(amount).toLocaleString()} could not be processed. Please try again.`,
     });
 
     if (status === 'completed') {

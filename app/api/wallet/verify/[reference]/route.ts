@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 import { Transaction } from '@/lib/models/Transaction';
+import { Notification } from '@/lib/models/Notification';
 import { verifyToken } from '@/lib/server-auth';
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
@@ -30,6 +31,13 @@ export async function GET(req: NextRequest, { params }: { params: { reference: s
     const amount = result.data.amount / 100;
     await Transaction.updateOne({ paystack_ref: reference, user_id: userId }, { status: 'completed', amount });
     await User.findByIdAndUpdate(userId, { $inc: { balance: amount } });
+
+    await Notification.create({
+      user_id: userId,
+      type: 'deposit',
+      title: 'Wallet Funded',
+      message: `Your wallet has been credited with ₦${amount.toLocaleString()}. Your balance is now updated.`,
+    });
 
     return NextResponse.json({ message: 'Wallet funded successfully', amount });
   } catch (err: any) {

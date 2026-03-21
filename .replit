@@ -46,3 +46,11 @@ externalPort = 3002
 deploymentTarget = "static"
 build = ["npm", "run", "build"]
 publicDir = "dist"
+
+[userenv]
+
+[userenv.shared]
+JWT_SECRET = "smartinvest_secret_key_change_me_in_production"
+INIT_SECRET = "smartinvest_init_secret"
+CRON_SECRET = "smartinvest_cron_secret"
+NODE_ENV = "development"

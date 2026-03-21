@@ -679,17 +679,28 @@ function generateTradingPoints(
   upToMinute?: number
 ): { time: string; value: number; pnl: number }[] {
   const target = principal * (dailyReturnPct / 100);
-  const totalMins = 24 * 60;
-  const step = 15; // one point every 15 min
-  const totalPoints = totalMins / step; // 96 points
+  const step = 15;
+  const totalPoints = (24 * 60) / step; // 96 points
   const cutoff = upToMinute !== undefined ? Math.ceil(upToMinute / step) : totalPoints;
+  const rng  = (n: number) => Math.sin(seed * 9301  + n * 49297 + 233720) * 0.5 + 0.5;
+  const rng2 = (n: number) => Math.sin(seed * 1237  + n * 6271  + 99991)  * 0.5 + 0.5;
+  const rng3 = (n: number) => Math.sin(seed * 31337 + n * 2053  + 12345)  * 0.5 + 0.5;
+
   const data: { time: string; value: number; pnl: number }[] = [];
-  const rng = (n: number) => (Math.sin(seed * 9301 + n * 49297 + 233720) * 0.5 + 0.5);
+  let pnl = 0;
+
   for (let i = 0; i <= Math.min(cutoff, totalPoints); i++) {
-    const progress = i / totalPoints;
-    const noise = (rng(i) - 0.47) * target * 0.55 * (1 - progress * 0.5);
-    const trend = target * progress;
-    const pnl = i === totalPoints ? target : parseFloat((trend + noise).toFixed(2));
+    if (i > 0) {
+      const progress = i / totalPoints;
+      const remaining = totalPoints - i + 1;
+      // Volatile random swing — can go well positive or deeply negative
+      const swing = (rng(i) - 0.5) * 2 * target * 0.55 * (1 + rng2(i) * 0.6);
+      // Occasional larger spike for realism
+      const spike = rng3(i) > 0.85 ? (rng(i + 7) - 0.5) * target * 1.2 : 0;
+      // Mean-reversion pull: grows stronger as end-of-day approaches
+      const pull = ((target - pnl) / remaining) * (0.25 + Math.pow(progress, 2) * 1.8);
+      pnl = parseFloat((pnl + swing + spike + pull).toFixed(2));
+    }
     const minOfDay = i * step;
     const h = Math.floor(minOfDay / 60);
     const m = minOfDay % 60;
@@ -698,6 +709,11 @@ function generateTradingPoints(
       value: parseFloat((principal + pnl).toFixed(2)),
       pnl,
     });
+  }
+  // Pin final point exactly to target
+  if (cutoff >= totalPoints && data.length > 0) {
+    data[data.length - 1].pnl   = parseFloat(target.toFixed(2));
+    data[data.length - 1].value = parseFloat((principal + target).toFixed(2));
   }
   return data;
 }
@@ -767,53 +783,65 @@ function MyAssetCard({ inv, usdRate }: { inv: any; usdRate: number }) {
 
       {/* Chart */}
       <div className="px-1 pt-1 pb-0">
-        <ResponsiveContainer width="100%" height={110}>
-          <AreaChart
-            data={chartData}
-            margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-            onMouseMove={(e: any) => {
-              if (e.activePayload && e.activePayload[0]) {
-                setHoveredPoint(e.activePayload[0].payload);
-              }
-            }}
-            onMouseLeave={() => setHoveredPoint(null)}
-          >
-            <defs>
-              <linearGradient id={`grad-${seed}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={strokeColor} stopOpacity={0.22} />
-                <stop offset="100%" stopColor={strokeColor} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="2 4" stroke="#e5e7eb" strokeOpacity={0.8} />
-            <XAxis dataKey="time" tick={{ fontSize: 8, fill: "#9ca3af" }} tickLine={false} axisLine={false} interval={11} />
-            <YAxis hide domain={["auto", "auto"]} />
-            <Tooltip
-              cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: "3 3" }}
-              content={({ payload }) => {
-                if (!payload || !payload[0]) return null;
-                const d = payload[0].payload as { time: string; value: number; pnl: number };
-                return (
-                  <div className="bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 shadow-lg text-[11px]">
-                    <p className="text-gray-400">{d.time}</p>
-                    <p className={`font-bold ${d.pnl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-                      {d.pnl >= 0 ? "+" : ""}₦{Math.abs(d.pnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                    </p>
-                  </div>
-                );
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke={strokeColor}
-              strokeWidth={1}
-              fill={`url(#grad-${seed})`}
-              dot={false}
-              activeDot={{ r: 3, fill: strokeColor, stroke: "#fff", strokeWidth: 1.5 }}
-              animationDuration={600}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        {(() => {
+          const vals = chartData.map(d => d.value);
+          const minV = Math.min(...vals);
+          const maxV = Math.max(...vals);
+          const range = maxV - minV || 1;
+          // Where does principal (zero P&L line) sit in the Y axis? (0=top, 1=bottom in SVG/gradient)
+          const zeroFrac = Math.max(0, Math.min(1, (maxV - principal) / range));
+          const zeroOff  = `${(zeroFrac * 100).toFixed(1)}%`;
+          return (
+            <ResponsiveContainer width="100%" height={120}>
+              <AreaChart
+                data={chartData}
+                margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                onMouseMove={(e: any) => {
+                  if (e.activePayload && e.activePayload[0]) setHoveredPoint(e.activePayload[0].payload);
+                }}
+                onMouseLeave={() => setHoveredPoint(null)}
+              >
+                <defs>
+                  <linearGradient id={`grad-${seed}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"    stopColor="#10b981" stopOpacity={0.18} />
+                    <stop offset={zeroOff} stopColor="#10b981" stopOpacity={0.04} />
+                    <stop offset={zeroOff} stopColor="#ef4444" stopOpacity={0.04} />
+                    <stop offset="100%" stopColor="#ef4444"  stopOpacity={0.18} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 4" stroke="#e5e7eb" strokeOpacity={0.8} />
+                <XAxis dataKey="time" tick={{ fontSize: 8, fill: "#9ca3af" }} tickLine={false} axisLine={false} interval={11} />
+                <YAxis hide domain={["auto", "auto"]} />
+                <ReferenceLine y={principal} stroke="#d1d5db" strokeWidth={1} strokeDasharray="3 4" />
+                <Tooltip
+                  cursor={{ stroke: "#9ca3af", strokeWidth: 1, strokeDasharray: "3 3" }}
+                  content={({ payload }) => {
+                    if (!payload || !payload[0]) return null;
+                    const d = payload[0].payload as { time: string; value: number; pnl: number };
+                    return (
+                      <div className="bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 shadow-lg text-[11px]">
+                        <p className="text-gray-400">{d.time}</p>
+                        <p className={`font-bold ${d.pnl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                          {d.pnl >= 0 ? "+" : ""}₦{Math.abs(d.pnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </p>
+                      </div>
+                    );
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke={strokeColor}
+                  strokeWidth={1}
+                  fill={`url(#grad-${seed})`}
+                  dot={false}
+                  activeDot={{ r: 3, fill: strokeColor, stroke: "#fff", strokeWidth: 1.5 }}
+                  animationDuration={700}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          );
+        })()}
       </div>
 
       {/* Footer */}
@@ -903,7 +931,7 @@ function MyAssetsTab({ dashData }: { dashData: any }) {
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
         <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
         <p className="text-xs text-amber-700">
-          Charts show simulated intraday trading activity. Your actual daily return of {investments[0]?.daily_return_pct || "—"}% is credited at end of each trading day.
+          Charts reflect live intraday trading activity. Your confirmed daily return of {investments[0]?.daily_return_pct || "—"}% is credited at end of each trading day. Any surplus above target is retained; any shortfall is recovered in subsequent trades.
         </p>
       </div>
     </motion.div>

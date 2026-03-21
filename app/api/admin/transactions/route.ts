@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db';
 import { verifyAdmin } from '@/lib/admin-auth';
 import { Transaction } from '@/lib/models/Transaction';
 import { User } from '@/lib/models/User';
+import { Notification } from '@/lib/models/Notification';
 
 export async function GET(req: NextRequest) {
   try {
@@ -49,13 +50,26 @@ export async function PATCH(req: NextRequest) {
     if (action === 'approve_withdrawal') {
       tx.status = 'completed';
       await tx.save();
+      await Notification.create({
+        user_id: tx.user_id,
+        type: 'withdrawal',
+        title: 'Withdrawal Approved',
+        message: `Your withdrawal of ₦${parseFloat(tx.amount).toLocaleString()} has been approved and processed. The funds should arrive in your account shortly.`,
+      });
       return NextResponse.json({ transaction: tx });
     }
 
     if (action === 'reject_withdrawal') {
       tx.status = 'failed';
+      tx.failure_reason = 'Rejected by administrator';
       await tx.save();
       await User.findByIdAndUpdate(tx.user_id, { $inc: { balance: tx.amount } });
+      await Notification.create({
+        user_id: tx.user_id,
+        type: 'withdrawal',
+        title: 'Withdrawal Rejected',
+        message: `Your withdrawal request of ₦${parseFloat(tx.amount).toLocaleString()} was rejected. The amount has been refunded to your wallet balance.`,
+      });
       return NextResponse.json({ transaction: tx });
     }
 

@@ -908,9 +908,14 @@ export default function Dashboard() {
     const ref = params.get("ref");
     if (funded && ref) {
       fetch(`/api/wallet/verify/${ref}`, { headers: authHeaders() })
-        .then(r => r.json())
-        .then(() => { showNotif("success", "Wallet funded!"); loadDashboard(); refreshUser(); })
-        .catch(() => showNotif("error", "Payment verification failed."));
+        .then(async r => {
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || "Payment verification failed.");
+          showNotif("success", "Wallet funded successfully!");
+          loadDashboard(); refreshUser();
+          window.history.replaceState({}, '', '/dashboard');
+        })
+        .catch((e) => showNotif("error", e.message || "Payment verification failed. Please contact support."));
     }
   }, []);
 
@@ -953,13 +958,20 @@ export default function Dashboard() {
             email: user?.email,
             amount: parseFloat(fundAmount) * 100,
             ref: result.reference,
-            onClose: () => setFundLoading(false),
+            onClose: () => {
+              setFundLoading(false);
+              showNotif("error", "Payment was cancelled.");
+            },
             callback: async (response: any) => {
               try {
-                await fetch(`/api/wallet/verify/${response.reference}`, { headers: authHeaders() });
+                const verifyRes = await fetch(`/api/wallet/verify/${response.reference}`, { headers: authHeaders() });
+                const verifyData = await verifyRes.json();
+                if (!verifyRes.ok) throw new Error(verifyData.error || "Payment verification failed.");
                 showNotif("success", "Wallet funded successfully!");
                 await loadDashboard(); await refreshUser(); setFundAmount("");
-              } catch { showNotif("error", "Verification failed."); }
+              } catch (e: any) {
+                showNotif("error", e.message || "Verification failed. Please contact support.");
+              }
               setFundLoading(false);
             },
           });
@@ -999,7 +1011,7 @@ export default function Dashboard() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      showNotif("success", "Withdrawal initiated!");
+      showNotif("success", "Withdrawal request submitted! You'll be notified once processed.");
       setWithdrawForm({ amount: "", accountName: "", accountNumber: "", bankCode: "", bankName: "" });
       await loadDashboard(); await refreshUser();
       fetch('/api/notifications', { headers: authHeaders() })
@@ -1891,8 +1903,8 @@ export default function Dashboard() {
                         || parseFloat(withdrawForm.amount) > balance || parseFloat(withdrawForm.amount) <= 0}
                       className="w-full h-12 bg-primary text-white rounded-xl font-semibold hover:brightness-110 transition-all">
                       {withdrawLoading
-                        ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Processing…</span>
-                        : <span className="flex items-center gap-2"><Minus className="w-4 h-4" />Withdraw Funds</span>}
+                        ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Submitting Request…</span>
+                        : <span className="flex items-center gap-2"><Minus className="w-4 h-4" />Submit Withdrawal Request</span>}
                     </Button>
                   </div>
                 </motion.div>

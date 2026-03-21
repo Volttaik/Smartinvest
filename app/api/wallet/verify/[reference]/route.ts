@@ -21,8 +21,12 @@ export async function GET(req: NextRequest, { params }: { params: { reference: s
     const result = await resp.json();
 
     if (!result.status || result.data.status !== 'success') {
-      await Transaction.updateOne({ paystack_ref: reference, user_id: userId }, { status: 'failed' });
-      return NextResponse.json({ error: 'Payment not successful' }, { status: 400 });
+      const failReason = result.data?.gateway_response || result.message || 'Payment not successful';
+      await Transaction.updateOne(
+        { paystack_ref: reference, user_id: userId },
+        { status: 'failed', failure_reason: failReason }
+      );
+      return NextResponse.json({ error: `Payment failed: ${failReason}` }, { status: 400 });
     }
 
     const existing = await Transaction.findOne({ paystack_ref: reference, status: 'completed' });

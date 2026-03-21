@@ -2,10 +2,11 @@ import { Schema, model, models } from 'mongoose';
 
 const transactionSchema = new Schema({
   user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  type: { type: String, required: true, enum: ['deposit', 'withdrawal', 'investment', 'daily_return', 'referral_bonus', 'trade_gain', 'trade_loss'] },
+  type: { type: String, required: true, enum: ['deposit', 'withdrawal', 'investment', 'daily_return', 'referral_bonus', 'referral_commission', 'trade_gain', 'trade_loss'] },
   amount: { type: Number, required: true },
   description: { type: String, required: true },
   status: { type: String, enum: ['pending', 'completed', 'failed'], default: 'completed' },
+  failure_reason: { type: String },
   paystack_ref: { type: String },
   reference: { type: String },
   metadata: { type: Schema.Types.Mixed },

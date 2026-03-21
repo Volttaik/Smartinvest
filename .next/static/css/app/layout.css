@@ -1003,6 +1003,9 @@ body{
 .max-h-48{
   max-height: 12rem;
 }
+.max-h-72{
+  max-height: 18rem;
+}
 .max-h-80{
   max-height: 20rem;
 }
@@ -1757,6 +1760,10 @@ body{
 .bg-muted\/50{
   background-color: hsl(var(--muted) / 0.5);
 }
+.bg-orange-100{
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 237 213 / var(--tw-bg-opacity, 1));
+}
 .bg-orange-50{
   --tw-bg-opacity: 1;
   background-color: rgb(255 247 237 / var(--tw-bg-opacity, 1));
@@ -2068,6 +2075,10 @@ body{
   padding-left: 0.125rem;
   padding-right: 0.125rem;
 }
+.px-1\.5{
+  padding-left: 0.375rem;
+  padding-right: 0.375rem;
+}
 .px-10{
   padding-left: 2.5rem;
   padding-right: 2.5rem;
@@ -2189,6 +2200,9 @@ body{
 }
 .pl-9{
   padding-left: 2.25rem;
+}
+.pr-1{
+  padding-right: 0.25rem;
 }
 .pr-10{
   padding-right: 2.5rem;
@@ -2443,6 +2457,10 @@ body{
 .text-muted-foreground\/60{
   color: hsl(var(--muted-foreground) / 0.6);
 }
+.text-orange-500{
+  --tw-text-opacity: 1;
+  color: rgb(249 115 22 / var(--tw-text-opacity, 1));
+}
 .text-orange-600{
   --tw-text-opacity: 1;
   color: rgb(234 88 12 / var(--tw-text-opacity, 1));
@@ -2559,6 +2577,9 @@ body{
 .text-zinc-700{
   --tw-text-opacity: 1;
   color: rgb(63 63 70 / var(--tw-text-opacity, 1));
+}
+.line-through{
+  text-decoration-line: line-through;
 }
 .underline-offset-4{
   text-underline-offset: 4px;

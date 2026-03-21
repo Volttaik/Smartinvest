@@ -854,6 +854,20 @@ export default function Dashboard() {
   }, [authChecked]);
 
   useEffect(() => {
+    if (!authChecked) return;
+    const interval = setInterval(() => {
+      fetch('/api/dashboard', { headers: authHeaders() })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) setDashData(data); })
+        .catch(() => {});
+      fetch('/api/notifications', { headers: authHeaders() })
+        .then(r => r.json()).then(data => { if (Array.isArray(data)) setNotifications(data); })
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [authChecked]);
+
+  useEffect(() => {
     if (authChecked && user && user.profile_completed === false) {
       setShowProfileSetup(true);
     }
@@ -1166,7 +1180,7 @@ export default function Dashboard() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.96 }}
                     transition={{ duration: 0.18 }}
-                    className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+                    className="absolute right-0 top-full mt-2 w-80 bg-white border border-border rounded-2xl shadow-2xl z-50 overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                       <span className="font-semibold text-sm">Notifications</span>
                       <button onClick={() => setBellOpen(false)} className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
@@ -1407,29 +1421,44 @@ export default function Dashboard() {
                         <h3 className="font-semibold text-sm text-foreground">Recent Transactions</h3>
                         <button onClick={() => setActiveTab("transactions")} className="text-xs text-primary hover:underline">View all</button>
                       </div>
-                      <div className="space-y-1">
-                        {dashData.recentTransactions.slice(0, 5).map((tx: any, i: number) => {
+                      <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
+                        {dashData.recentTransactions.slice(0, 10).map((tx: any, i: number) => {
                           const isCredit = ["deposit","daily_return","trade_gain","referral_commission"].includes(tx.type);
+                          const isFailed = tx.status === 'failed';
+                          const isPending = tx.status === 'pending';
                           return (
                             <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                               transition={{ delay: i * 0.04 }}
-                              className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/40 transition-colors">
-                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0
-                                ${isCredit ? 'bg-emerald-50 border border-emerald-100' : 'bg-red-50 border border-red-100'}`}>
-                                {isCredit
-                                  ? <ArrowUpRight className="w-4 h-4 text-emerald-600" />
-                                  : <ArrowDownLeft className="w-4 h-4 text-red-500" />}
+                              className="flex items-start gap-3 p-3 rounded-xl hover:bg-muted/40 transition-colors">
+                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5
+                                ${isFailed ? 'bg-orange-50 border border-orange-100' : isCredit ? 'bg-emerald-50 border border-emerald-100' : 'bg-red-50 border border-red-100'}`}>
+                                {isFailed
+                                  ? <AlertCircle className="w-4 h-4 text-orange-500" />
+                                  : isCredit
+                                    ? <ArrowUpRight className="w-4 h-4 text-emerald-600" />
+                                    : <ArrowDownLeft className="w-4 h-4 text-red-500" />}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-foreground capitalize">
-                                  {tx.type.replace(/_/g, ' ')}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium text-foreground capitalize">
+                                    {tx.type.replace(/_/g, ' ')}
+                                  </p>
+                                  {isFailed && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600">FAILED</span>
+                                  )}
+                                  {isPending && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600">PENDING</span>
+                                  )}
+                                </div>
                                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
                                   {new Date(tx.created_at).toLocaleDateString()}
                                 </p>
+                                {isFailed && tx.failure_reason && (
+                                  <p className="text-[10px] text-orange-500 mt-0.5 truncate">{tx.failure_reason}</p>
+                                )}
                               </div>
-                              <span className={`text-sm font-bold ${isCredit ? 'text-emerald-600' : 'text-red-500'}`}>
+                              <span className={`text-sm font-bold shrink-0 ${isFailed ? 'text-muted-foreground line-through' : isCredit ? 'text-emerald-600' : 'text-red-500'}`}>
                                 {isCredit ? '+' : '-'}₦{parseFloat(tx.amount).toLocaleString()}
                               </span>
                             </motion.div>

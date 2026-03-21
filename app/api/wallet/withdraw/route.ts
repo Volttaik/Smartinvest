@@ -48,6 +48,9 @@ export async function POST(req: NextRequest) {
     });
     const transferData = await transferResp.json();
     const status = transferData.status ? 'completed' : 'failed';
+    const failReason = !transferData.status
+      ? (transferData.message || 'Transfer could not be processed')
+      : null;
 
     if (transferData.status) {
       user.balance = parseFloat(user.balance) - parseFloat(amount);
@@ -57,7 +60,9 @@ export async function POST(req: NextRequest) {
     await Transaction.create({
       user_id: userId, type: 'withdrawal', amount,
       description: `Withdrawal to ${bankName} - ${accountNumber}`,
-      status, reference, metadata: { accountName, accountNumber, bankName, bankCode },
+      status, reference,
+      failure_reason: failReason,
+      metadata: { accountName, accountNumber, bankName, bankCode },
     });
 
     await Notification.create({
@@ -66,13 +71,15 @@ export async function POST(req: NextRequest) {
       title: status === 'completed' ? 'Withdrawal Initiated' : 'Withdrawal Failed',
       message: status === 'completed'
         ? `Your withdrawal of ₦${parseFloat(amount).toLocaleString()} to ${bankName} (${accountNumber}) has been initiated and is being processed.`
-        : `Your withdrawal request of ₦${parseFloat(amount).toLocaleString()} could not be processed. Please try again.`,
+        : `Your withdrawal of ₦${parseFloat(amount).toLocaleString()} failed. Reason: ${failReason}`,
     });
 
     if (status === 'completed') {
       return NextResponse.json({ message: 'Withdrawal initiated successfully', reference });
     }
-    return NextResponse.json({ error: 'Transfer failed. Please try again or contact support.' }, { status: 400 });
+    return NextResponse.json({
+      error: `Withdrawal failed: ${failReason}. Please try again or contact support.`
+    }, { status: 400 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Withdrawal failed.' }, { status: err.status || 500 });
   }

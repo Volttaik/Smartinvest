@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --port 5000",
     "build": "next build",
-    "start": "next start --port 5000"
+    "start": "next start --port 5000",
+    "init-db": "node scripts/init-db.js"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

@@ -15,7 +15,7 @@ import {
   Coins, LineChart, Flame,
   UserCircle, BellRing, ChevronDown, Search, CheckCheck,
   CalendarDays, Phone, MapPin, FileText, ShieldCheck, Shield, X,
-  Lock, Camera, Upload, User,
+  Lock, Camera, Upload, User, Sunrise, Sun, Moon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -792,7 +792,6 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [greeting, setGreeting] = useState("");
-  const [greetingEmoji, setGreetingEmoji] = useState("");
   const [dashData, setDashData] = useState<any>(null);
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1070,9 +1069,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     const h = new Date().getHours();
-    if (h < 12) { setGreeting("Good morning"); setGreetingEmoji("🌅"); }
-    else if (h < 17) { setGreeting("Good afternoon"); setGreetingEmoji("☀️"); }
-    else { setGreeting("Good evening"); setGreetingEmoji("🌙"); }
+    if (h < 12) { setGreeting("Good morning"); }
+    else if (h < 17) { setGreeting("Good afternoon"); }
+    else { setGreeting("Good evening"); }
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -1192,8 +1191,16 @@ export default function Dashboard() {
               <Menu className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="font-display font-bold text-base text-foreground leading-tight">
-                {activeTab === "overview" ? <span>{greetingEmoji} {greeting}, {user?.username || 'investor'}</span> : currentNav?.label}
+              <h1 className="font-display font-bold text-sm text-foreground leading-tight">
+                {activeTab === "overview" ? (
+                  <span className="flex items-center gap-1.5 flex-wrap">
+                    <span className="flex items-center gap-1 bg-red-600 text-white text-[11px] font-semibold px-2 py-0.5 rounded-md">
+                      {greeting === "Good morning" ? <Sunrise className="w-3 h-3" /> : greeting === "Good afternoon" ? <Sun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
+                      {greeting}
+                    </span>
+                    <span className="text-sm">, {user?.username || 'investor'}</span>
+                  </span>
+                ) : currentNav?.label}
               </h1>
               <p className="text-[11px] text-muted-foreground hidden sm:block">
                 {activeTab === "overview" ? "Here's your investment summary" : "SmartInvest Platform"}

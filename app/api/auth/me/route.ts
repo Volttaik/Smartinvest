@@ -18,6 +18,15 @@ export async function GET(req: NextRequest) {
       referral_code: user.referral_code,
       referral_earnings: user.referral_earnings,
       total_earnings: user.total_earnings,
+      profile_completed: user.profile_completed,
+      date_of_birth: user.date_of_birth,
+      gender: user.gender,
+      address: user.address,
+      phone: user.phone,
+      bio: user.bio,
+      nin: user.nin,
+      is_active: user.is_active,
+      is_admin: user.is_admin,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Unauthorized' }, { status: err.status || 401 });

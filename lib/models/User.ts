@@ -11,6 +11,7 @@ const userSchema = new Schema({
   referral_earnings: { type: Number, default: 0 },
   total_earnings:    { type: Number, default: 0 },
   is_active:         { type: Boolean, default: true },
+  is_admin:          { type: Boolean, default: false },
 
   profile_completed: { type: Boolean, default: false },
   date_of_birth:     { type: String, default: '' },

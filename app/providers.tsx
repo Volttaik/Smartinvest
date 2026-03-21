@@ -11,6 +11,15 @@ interface User {
   referral_code: string;
   referral_earnings?: number;
   total_earnings?: number;
+  profile_completed?: boolean;
+  date_of_birth?: string;
+  gender?: string;
+  address?: string;
+  phone?: string;
+  bio?: string;
+  nin?: string;
+  is_active?: boolean;
+  is_admin?: boolean;
 }
 
 interface AuthContextType {

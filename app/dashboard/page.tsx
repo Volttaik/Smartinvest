@@ -1124,7 +1124,7 @@ export default function Dashboard() {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <aside className={`fixed lg:relative z-40 flex flex-col h-full bg-foreground w-64 shrink-0 transition-transform duration-300 rounded-b-[6px]
+      <aside className={`fixed lg:sticky lg:top-0 z-40 flex flex-col h-screen bg-foreground w-64 shrink-0 transition-transform duration-300 rounded-b-[6px]
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
         <div className="p-5 border-b border-white/10">
           <Link href="/" className="flex items-center gap-2.5">

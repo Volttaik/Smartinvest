@@ -2,7 +2,7 @@
   "/page": "app/page.js",
   "/login/page": "app/login/page.js",
   "/register/page": "app/register/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
   "/api/dashboard/route": "app/api/dashboard/route.js",
+  "/dashboard/page": "app/dashboard/page.js",
   "/api/notifications/route": "app/api/notifications/route.js"
 }

@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 import { Investment } from '@/lib/models/Investment';
+import { Package } from '@/lib/models/Package';
 import { Transaction } from '@/lib/models/Transaction';
 import { Trade } from '@/lib/models/Trade';
 import { verifyToken } from '@/lib/server-auth';

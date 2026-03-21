@@ -791,6 +791,7 @@ export default function Dashboard() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [greeting, setGreeting] = useState("");
   const [dashData, setDashData] = useState<any>(null);
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1066,12 +1067,12 @@ export default function Dashboard() {
   const tiers = ["All", ...Array.from(new Set(packages.map((p: any) => p.tier)))];
   const filteredPkgs = tierFilter === "All" ? packages : packages.filter((p: any) => p.tier === tierFilter);
 
-  const greeting = (() => {
+  useEffect(() => {
     const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 17) return "Good afternoon";
-    return "Good evening";
-  })();
+    if (h < 12) setGreeting("Good morning");
+    else if (h < 17) setGreeting("Good afternoon");
+    else setGreeting("Good evening");
+  }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 

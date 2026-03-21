@@ -1846,21 +1846,57 @@ export default function Dashboard() {
                       256-bit SSL encryption · Powered by Paystack
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                        <span className="text-sm font-semibold text-blue-800">How to Fund Using EasyBuy Channel</span>
+                    {/* EasyBuy Guide */}
+                    <div className="rounded-2xl overflow-hidden border border-border">
+                      <div className="bg-foreground px-5 py-4 flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <div className="w-5 h-5 rounded-md bg-primary flex items-center justify-center shrink-0">
+                              <Zap className="w-3 h-3 text-white" />
+                            </div>
+                            <span className="text-white font-bold text-sm tracking-tight">Fund with EasyBuy</span>
+                          </div>
+                          <p className="text-white/40 text-[11px]">Instant virtual account · Powered by Paystack</p>
+                        </div>
+                        <div className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30">
+                          <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-wider">Recommended</span>
+                        </div>
                       </div>
-                      <p className="text-xs text-blue-700 leading-relaxed">
-                        EasyBuy is our payment API provider. When prompted in the Paystack checkout, select <strong>EasyBuy</strong> as your payment channel to find your dedicated virtual account number safely and securely.
-                      </p>
-                      <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
-                        <li>Enter your desired amount above and tap <strong>Fund Wallet</strong></li>
-                        <li>On the Paystack checkout, choose the <strong>EasyBuy</strong> channel</li>
-                        <li>A unique virtual account number will be generated for you</li>
-                        <li>Transfer the exact amount to that account from your bank app</li>
-                        <li>Your wallet will be credited automatically within seconds</li>
-                      </ol>
+
+                      <div className="bg-muted/30 p-4 space-y-3">
+                        {[
+                          { step: 1, icon: Wallet,       title: "Enter amount & tap Fund Wallet",         desc: "Choose a quick amount or type a custom value above, then hit the Fund Wallet button." },
+                          { step: 2, icon: CreditCard,   title: "Select EasyBuy on Paystack checkout",   desc: "On the Paystack payment page, tap the EasyBuy channel option." },
+                          { step: 3, icon: ArrowDownLeft,title: "Get your unique virtual account",        desc: "A dedicated account number is instantly generated just for this transaction." },
+                          { step: 4, icon: ArrowUpRight, title: "Transfer from your bank app",            desc: "Open your banking app and send the exact amount to the virtual account shown." },
+                          { step: 5, icon: Check,        title: "Wallet credited automatically",          desc: "Your SmartInvest wallet is funded within seconds — no manual action needed." },
+                        ].map(({ step, icon: Icon, title, desc }, i, arr) => (
+                          <div key={step} className="flex gap-3">
+                            <div className="flex flex-col items-center">
+                              <div className="w-8 h-8 rounded-xl bg-foreground flex items-center justify-center shrink-0 shadow-sm">
+                                <Icon className="w-3.5 h-3.5 text-primary" />
+                              </div>
+                              {i < arr.length - 1 && (
+                                <div className="w-px flex-1 mt-1.5 bg-border min-h-[16px]" />
+                              )}
+                            </div>
+                            <div className="pb-3 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Step {step}</span>
+                              </div>
+                              <p className="text-xs font-semibold text-foreground leading-snug">{title}</p>
+                              <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{desc}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="px-4 py-3 bg-amber-50 border-t border-amber-200 flex gap-2.5 items-start">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-amber-800 leading-relaxed">
+                          Always verify the account name on checkout shows <strong>SmartInvest / EasyBuy</strong> before transferring.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </motion.div>

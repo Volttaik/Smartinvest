@@ -120,7 +120,7 @@ function PnLChart({ chartData, totalEarned, totalInvested }: {
                   <stop offset="100%" stopColor={strokeColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 6" stroke="hsl(var(--border))" vertical={false} />
+              <CartesianGrid strokeDasharray="3 6" stroke="hsl(var(--border))" strokeOpacity={0.6} />
               <XAxis
                 dataKey="month"
                 tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
@@ -140,15 +140,15 @@ function PnLChart({ chartData, totalEarned, totalInvested }: {
                 }}
                 labelStyle={{ fontWeight: 600, marginBottom: 2 }}
               />
-              {view === "pnl" && <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1.5} strokeDasharray="4 4" />}
+              {view === "pnl" && <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1} strokeDasharray="4 4" />}
               <Area
                 type="monotone"
                 dataKey={dataKey}
                 stroke={strokeColor}
                 fill="url(#pnl-grad)"
-                strokeWidth={2.5}
-                dot={displayData.length <= 6 ? { fill: strokeColor, r: 3, stroke: "#fff", strokeWidth: 1.5 } : false}
-                activeDot={{ r: 5, fill: strokeColor, stroke: "#fff", strokeWidth: 2 }}
+                strokeWidth={1}
+                dot={displayData.length <= 6 ? { fill: strokeColor, r: 2.5, stroke: "#fff", strokeWidth: 1.5 } : false}
+                activeDot={{ r: 4, fill: strokeColor, stroke: "#fff", strokeWidth: 2 }}
                 animationDuration={800}
               />
             </AreaChart>
@@ -282,7 +282,7 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
                       <stop offset="100%" stopColor="#60a5fa" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <Area type="monotone" dataKey="earnings" stroke="#60a5fa" fill="url(#card-grad)" strokeWidth={2} dot={false} />
+                  <Area type="monotone" dataKey="earnings" stroke="#60a5fa" fill="url(#card-grad)" strokeWidth={1} dot={false} />
                   <Tooltip formatter={(v: any) => `₦${parseFloat(v).toLocaleString()}`}
                     contentStyle={{ background: "#1e3a5f", border: "none", borderRadius: 8, fontSize: 11, color: "#fff" }} />
                 </AreaChart>
@@ -591,7 +591,7 @@ function PortfolioTab({ dashData, balance }: { dashData: any; balance: number })
                   <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 6" stroke="hsl(var(--border))" vertical={false} />
+              <CartesianGrid strokeDasharray="3 6" stroke="hsl(var(--border))" strokeOpacity={0.6} />
               <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={52}
                 tickFormatter={v => v >= 1000 ? `₦${(v / 1000).toFixed(0)}k` : `₦${v}`} />
@@ -601,9 +601,9 @@ function PortfolioTab({ dashData, balance }: { dashData: any; balance: number })
                 labelStyle={{ fontWeight: 600, marginBottom: 2 }}
               />
               <Area type="monotone" dataKey="earnings" stroke="hsl(var(--primary))"
-                fill="url(#port-grad)" strokeWidth={2.5}
-                dot={dashData.chartData.length <= 6 ? { fill: "hsl(var(--primary))", r: 3, stroke: "#fff", strokeWidth: 1.5 } : false}
-                activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "#fff", strokeWidth: 2 }}
+                fill="url(#port-grad)" strokeWidth={1}
+                dot={dashData.chartData.length <= 6 ? { fill: "hsl(var(--primary))", r: 2.5, stroke: "#fff", strokeWidth: 1.5 } : false}
+                activeDot={{ r: 4, fill: "hsl(var(--primary))", stroke: "#fff", strokeWidth: 2 }}
                 animationDuration={800}
               />
             </AreaChart>
@@ -784,7 +784,7 @@ function MyAssetCard({ inv, usdRate }: { inv: any; usdRate: number }) {
                 <stop offset="100%" stopColor={strokeColor} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="2 4" stroke="#f0f0f0" vertical={false} />
+            <CartesianGrid strokeDasharray="2 4" stroke="#e5e7eb" strokeOpacity={0.8} />
             <XAxis dataKey="time" tick={{ fontSize: 8, fill: "#9ca3af" }} tickLine={false} axisLine={false} interval={11} />
             <YAxis hide domain={["auto", "auto"]} />
             <Tooltip
@@ -806,10 +806,10 @@ function MyAssetCard({ inv, usdRate }: { inv: any; usdRate: number }) {
               type="monotone"
               dataKey="value"
               stroke={strokeColor}
-              strokeWidth={2}
+              strokeWidth={1}
               fill={`url(#grad-${seed})`}
               dot={false}
-              activeDot={{ r: 3.5, fill: strokeColor, stroke: "#fff", strokeWidth: 1.5 }}
+              activeDot={{ r: 3, fill: strokeColor, stroke: "#fff", strokeWidth: 1.5 }}
               animationDuration={600}
             />
           </AreaChart>
@@ -1690,13 +1690,13 @@ export default function Dashboard() {
                                 <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                               </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                            <CartesianGrid strokeDasharray="3 6" stroke="hsl(var(--border))" strokeOpacity={0.6} />
+                            <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                             <Tooltip formatter={(v: any) => [`₦${parseFloat(v).toLocaleString()}`, "Earnings"]}
-                              contentStyle={{ borderRadius: 12, border: '1px solid hsl(var(--border))', fontSize: 11 }} />
+                              contentStyle={{ borderRadius: 12, border: '1px solid hsl(var(--border))', fontSize: 11, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", background: "#fff" }} />
                             <Area type="monotone" dataKey="earnings" stroke="hsl(var(--primary))"
-                              fill="url(#earn-grad)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                              fill="url(#earn-grad)" strokeWidth={1} dot={false} activeDot={{ r: 4, fill: "hsl(var(--primary))", stroke: "#fff", strokeWidth: 2 }} />
                           </AreaChart>
                         </ResponsiveContainer>
                       ) : (

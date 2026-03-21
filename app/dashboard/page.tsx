@@ -45,7 +45,7 @@ function AvatarIcon({ picture, size = "md" }: { picture?: string; size?: "sm" | 
 }
 
 const PIE_COLORS = ["hsl(var(--primary))", "#3b82f6", "#10b981", "#8b5cf6", "#f97316"];
-type Tab = "overview" | "invest" | "transactions" | "referrals" | "fund" | "withdraw" | "portfolio" | "assets" | "profile" | "notifications" | "security";
+type Tab = "overview" | "invest" | "transactions" | "referrals" | "fund" | "withdraw" | "portfolio" | "assets" | "myassets" | "profile" | "notifications" | "security";
 declare const PaystackPop: any;
 
 /* ─────────────────────────────────────────
@@ -604,6 +604,222 @@ function PortfolioTab({ dashData, balance }: { dashData: any; balance: number })
 }
 
 /* ─────────────────────────────────────────
+   MY ASSETS TAB
+───────────────────────────────────────── */
+const ASSET_MAP: Record<string, { symbol: string; name: string; bg: string; text: string; coinId?: string }> = {
+  "Starter":   { symbol: "BTC",  name: "Bitcoin",    bg: "bg-orange-50 border-orange-200", text: "text-orange-600", coinId: "bitcoin" },
+  "Basic":     { symbol: "ETH",  name: "Ethereum",   bg: "bg-violet-50 border-violet-200", text: "text-violet-600", coinId: "ethereum" },
+  "Standard":  { symbol: "SOL",  name: "Solana",     bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-600", coinId: "solana" },
+  "Premium":   { symbol: "TSLA", name: "Tesla",      bg: "bg-red-50 border-red-200",       text: "text-red-600" },
+  "Gold":      { symbol: "GC=F", name: "Gold",       bg: "bg-yellow-50 border-yellow-200", text: "text-yellow-700" },
+  "Platinum":  { symbol: "NVDA", name: "NVIDIA",     bg: "bg-green-50 border-green-200",   text: "text-green-600" },
+  "Executive": { symbol: "BNB",  name: "BNB",        bg: "bg-yellow-50 border-yellow-300", text: "text-yellow-600", coinId: "binancecoin" },
+};
+
+const NGN_TO_USD = 1 / 1650;
+
+function generateTradingPoints(
+  principal: number,
+  dailyReturnPct: number,
+  totalEarned: number,
+  seed: number
+): { time: string; value: number; pnl: number }[] {
+  const target = principal * (dailyReturnPct / 100);
+  const points = 48;
+  const data: { time: string; value: number; pnl: number }[] = [];
+  let current = 0;
+  const rng = (n: number) => {
+    const x = Math.sin(seed * 9301 + n * 49297 + 233720) * 0.5 + 0.5;
+    return x;
+  };
+  for (let i = 0; i <= points; i++) {
+    const progress = i / points;
+    const noise = (rng(i) - 0.48) * target * 0.6;
+    const trend = target * progress;
+    current = trend + noise * (1 - progress * 0.6);
+    const h = Math.floor((i / points) * 24);
+    const m = Math.floor(((i / points) * 24 - h) * 60);
+    const label = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    data.push({ time: label, value: parseFloat((principal + current).toFixed(2)), pnl: parseFloat(current.toFixed(2)) });
+  }
+  data[points].value = parseFloat((principal + target).toFixed(2));
+  data[points].pnl = parseFloat(target.toFixed(2));
+  return data;
+}
+
+function MyAssetCard({ inv, usdRate }: { inv: any; usdRate: number }) {
+  const assetKey = Object.keys(ASSET_MAP).find(k => inv.package_name?.toLowerCase().includes(k.toLowerCase())) || "Starter";
+  const asset = ASSET_MAP[assetKey] || ASSET_MAP["Starter"];
+  const principal = parseFloat(inv.amount) || 0;
+  const dailyReturnPct = parseFloat(inv.daily_return_pct) || 0;
+  const totalEarned = parseFloat(inv.total_earned) || 0;
+  const seed = inv.id ? parseInt(inv.id.slice(-4), 16) : 1;
+  const chartData = generateTradingPoints(principal, dailyReturnPct, totalEarned, seed);
+  const currentPnl = chartData[chartData.length - 1].pnl;
+  const isProfit = currentPnl >= 0;
+  const usdValue = (principal * NGN_TO_USD) / usdRate;
+  const [hoveredPoint, setHoveredPoint] = useState<{ value: number; pnl: number; time: string } | null>(null);
+  const displayed = hoveredPoint || chartData[chartData.length - 1];
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+      <div className="p-4 flex items-center justify-between border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${asset.bg}`}>
+            <span className={`text-[10px] font-bold ${asset.text}`}>{asset.symbol.replace("=F","")}</span>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-900">{asset.name}</p>
+            <p className="text-[11px] text-gray-400">{inv.package_name} · {asset.symbol.replace("=F","")}</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-gray-400">Value in {asset.symbol.replace("=F","")}</p>
+          <p className="text-sm font-bold text-gray-900">
+            {usdRate > 0 ? `${usdValue.toFixed(usdValue < 0.01 ? 6 : 4)} ${asset.symbol.replace("=F","")}` : "…"}
+          </p>
+        </div>
+      </div>
+
+      <div className="px-4 pt-3 pb-1 flex items-end justify-between">
+        <div>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider">Principal</p>
+          <p className="text-lg font-bold text-gray-900">₦{principal.toLocaleString()}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+            {hoveredPoint ? hoveredPoint.time : "Today's Return"}
+          </p>
+          <p className={`text-base font-bold ${displayed.pnl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+            {displayed.pnl >= 0 ? "+" : ""}₦{displayed.pnl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </p>
+        </div>
+      </div>
+
+      <div className="px-1 pb-1">
+        <ResponsiveContainer width="100%" height={100}>
+          <AreaChart data={chartData} onMouseLeave={() => setHoveredPoint(null)}>
+            <defs>
+              <linearGradient id={`grad-${seed}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={isProfit ? "#10b981" : "#ef4444"} stopOpacity={0.18} />
+                <stop offset="95%" stopColor={isProfit ? "#10b981" : "#ef4444"} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload[0]) {
+                  const d = payload[0].payload as { time: string; value: number; pnl: number };
+                  setHoveredPoint(d);
+                }
+                return null;
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={isProfit ? "#10b981" : "#ef4444"}
+              strokeWidth={2}
+              fill={`url(#grad-${seed})`}
+              dot={false}
+              activeDot={{ r: 3, fill: isProfit ? "#10b981" : "#ef4444" }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+        <span className="text-[11px] text-gray-500">
+          Day {inv.days_completed}/{inv.duration_days} · {dailyReturnPct}%/day
+        </span>
+        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${isProfit ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>
+          {isProfit ? "+" : ""}{dailyReturnPct}% target
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function MyAssetsTab({ dashData }: { dashData: any }) {
+  const investments: any[] = dashData?.activeInvestments || [];
+  const [usdRates, setUsdRates] = useState<Record<string, number>>({});
+  const [goldPrice, setGoldPrice] = useState(2300);
+  const [loadingRates, setLoadingRates] = useState(true);
+
+  useEffect(() => {
+    const coinIds = ["bitcoin", "ethereum", "solana", "binancecoin"];
+    fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinIds.join(",")}&vs_currencies=usd`)
+      .then(r => r.json())
+      .then(data => {
+        setUsdRates({
+          BTC: data.bitcoin?.usd || 65000,
+          ETH: data.ethereum?.usd || 3200,
+          SOL: data.solana?.usd || 155,
+          BNB: data.binancecoin?.usd || 580,
+        });
+      })
+      .catch(() => setUsdRates({ BTC: 65000, ETH: 3200, SOL: 155, BNB: 580 }))
+      .finally(() => setLoadingRates(false));
+  }, []);
+
+  const totalPrincipal = investments.reduce((s, i) => s + parseFloat(i.amount || 0), 0);
+  const totalDailyReturn = investments.reduce((s, i) => s + parseFloat(i.amount || 0) * (parseFloat(i.daily_return_pct || 0) / 100), 0);
+
+  const getRate = (inv: any): number => {
+    const assetKey = Object.keys(ASSET_MAP).find(k => inv.package_name?.toLowerCase().includes(k.toLowerCase())) || "Starter";
+    const asset = ASSET_MAP[assetKey];
+    if (!asset) return 1;
+    if (asset.symbol === "GC=F") return goldPrice;
+    if (asset.symbol === "TSLA") return 200;
+    if (asset.symbol === "NVDA") return 880;
+    return usdRates[asset.symbol] || 1;
+  };
+
+  return (
+    <motion.div key="myassets"
+      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.28 }} className="p-5 space-y-5">
+
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 text-white">
+        <p className="text-white/50 text-[10px] uppercase tracking-widest font-bold mb-1">Portfolio Trading View</p>
+        <h2 className="text-2xl font-bold font-display">My Assets</h2>
+        <p className="text-white/50 text-xs mt-1">Live 24h trading chart for each investment</p>
+        <div className="flex gap-4 mt-4">
+          <div>
+            <p className="text-white/40 text-[10px] uppercase tracking-wider">Total Invested</p>
+            <p className="text-lg font-bold">₦{totalPrincipal.toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="text-white/40 text-[10px] uppercase tracking-wider">Expected Today</p>
+            <p className="text-lg font-bold text-emerald-400">+₦{totalDailyReturn.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+          </div>
+        </div>
+      </div>
+
+      {investments.length === 0 ? (
+        <div className="py-16 text-center">
+          <LineChart className="w-12 h-12 mx-auto mb-3 text-gray-200" />
+          <p className="text-sm font-semibold text-gray-500">No active investments</p>
+          <p className="text-xs text-gray-400 mt-1">Start investing to see your live asset charts here</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {investments.map((inv: any) => (
+            <MyAssetCard key={inv.id} inv={inv} usdRate={getRate(inv)} />
+          ))}
+        </div>
+      )}
+
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
+        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-700">
+          Charts show simulated intraday trading activity. Your actual daily return of {investments[0]?.daily_return_pct || "—"}% is credited at end of each trading day.
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────
    ASSETS TAB
 ───────────────────────────────────────── */
 const CRYPTO_LIST = [
@@ -1079,6 +1295,7 @@ export default function Dashboard() {
   const navItems = [
     { id: "overview",       icon: BarChart3,     label: "Home" },
     { id: "portfolio",      icon: PieChartIcon,  label: "Portfolio" },
+    { id: "myassets",       icon: LineChart,     label: "My Assets" },
     { id: "assets",         icon: Gem,           label: "Assets" },
     { id: "invest",         icon: Package,       label: "Invest" },
     { id: "transactions",   icon: Activity,      label: "Transactions" },
@@ -1556,6 +1773,11 @@ export default function Dashboard() {
               {/* ═══ PORTFOLIO ═══ */}
               {activeTab === "portfolio" && (
                 <PortfolioTab dashData={dashData} balance={balance} />
+              )}
+
+              {/* ═══ MY ASSETS ═══ */}
+              {activeTab === "myassets" && (
+                <MyAssetsTab dashData={dashData} />
               )}
 
               {/* ═══ ASSETS ═══ */}

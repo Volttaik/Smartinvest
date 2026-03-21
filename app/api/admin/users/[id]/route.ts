@@ -50,10 +50,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const adminId = await verifyAdmin(req);
-    if (adminId === params.id) {
-      return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
-    }
+    await verifyAdmin(req);
     await connectDB();
     await User.findByIdAndDelete(params.id);
     return NextResponse.json({ success: true });

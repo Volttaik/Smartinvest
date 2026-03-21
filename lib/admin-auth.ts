@@ -1,26 +1,25 @@
 import { NextRequest } from 'next/server';
-import { verifyToken } from './server-auth';
-import { connectDB } from './db';
-import { User } from './models/User';
+import jwt from 'jsonwebtoken';
 
-export async function verifyAdmin(req: NextRequest): Promise<string> {
-  const userId = verifyToken(req);
-  await connectDB();
-  const user = await User.findById(userId).select('is_admin is_active');
-  if (!user) {
-    const err: any = new Error('User not found');
-    err.status = 404;
-    throw err;
-  }
-  if (!user.is_admin) {
+const SECRET = process.env.JWT_SECRET || 'smartinvest_fallback_secret';
+
+export async function verifyAdmin(req: NextRequest): Promise<void> {
+  const token = req.headers.get('x-admin-token');
+  if (!token) {
     const err: any = new Error('Admin access required');
     err.status = 403;
     throw err;
   }
-  if (!user.is_active) {
-    const err: any = new Error('Account suspended');
+  try {
+    const payload = jwt.verify(token, SECRET) as any;
+    if (!payload.admin) {
+      const err: any = new Error('Admin access required');
+      err.status = 403;
+      throw err;
+    }
+  } catch (e: any) {
+    const err: any = new Error('Invalid or expired admin session');
     err.status = 403;
     throw err;
   }
-  return userId;
 }

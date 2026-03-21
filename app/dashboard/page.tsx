@@ -1097,12 +1097,6 @@ export default function Dashboard() {
               <div className="text-xs text-white/40 truncate">{user?.email}</div>
             </div>
           </div>
-          {user?.is_admin && (
-            <Link href="/admin"
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-sm text-yellow-400/80 hover:text-yellow-300 hover:bg-yellow-500/10 transition-all">
-              <Shield className="w-4 h-4" /> Admin Panel
-            </Link>
-          )}
           <button onClick={handleLogout}
             className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-sm text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all">
             <LogOut className="w-4 h-4" /> Sign Out

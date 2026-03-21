@@ -2178,6 +2178,9 @@ body{
 .pl-1{
   padding-left: 0.25rem;
 }
+.pl-10{
+  padding-left: 2.5rem;
+}
 .pl-4{
   padding-left: 1rem;
 }
@@ -2545,9 +2548,6 @@ body{
 .text-white\/70{
   color: rgb(255 255 255 / 0.7);
 }
-.text-yellow-400\/80{
-  color: rgb(250 204 21 / 0.8);
-}
 .text-yellow-600{
   --tw-text-opacity: 1;
   color: rgb(202 138 4 / var(--tw-text-opacity, 1));
@@ -2814,14 +2814,14 @@ body{
   background-color: hsl(var(--primary) / 0.9);
 }
 
-.hover\:bg-purple-100:hover{
-  --tw-bg-opacity: 1;
-  background-color: rgb(243 232 255 / var(--tw-bg-opacity, 1));
-}
-
 .hover\:bg-red-100:hover{
   --tw-bg-opacity: 1;
   background-color: rgb(254 226 226 / var(--tw-bg-opacity, 1));
+}
+
+.hover\:bg-red-50:hover{
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 242 242 / var(--tw-bg-opacity, 1));
 }
 
 .hover\:bg-red-500\/10:hover{
@@ -2847,10 +2847,6 @@ body{
 
 .hover\:bg-white\/\[0\.07\]:hover{
   background-color: rgb(255 255 255 / 0.07);
-}
-
-.hover\:bg-yellow-500\/10:hover{
-  background-color: rgb(234 179 8 / 0.1);
 }
 
 .hover\:text-accent-foreground:hover{
@@ -2885,11 +2881,6 @@ body{
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
-.hover\:text-yellow-300:hover{
-  --tw-text-opacity: 1;
-  color: rgb(253 224 71 / var(--tw-text-opacity, 1));
-}
-
 .hover\:underline:hover{
   text-decoration-line: underline;
 }
@@ -2911,6 +2902,11 @@ body{
 
 .focus\:border-primary:focus{
   border-color: hsl(var(--primary));
+}
+
+.focus\:border-red-400:focus{
+  --tw-border-opacity: 1;
+  border-color: rgb(248 113 113 / var(--tw-border-opacity, 1));
 }
 
 .focus\:outline-none:focus{

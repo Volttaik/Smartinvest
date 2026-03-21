@@ -15,7 +15,7 @@ import {
   Coins, LineChart, Flame,
   UserCircle, BellRing, ChevronDown, Search, CheckCheck,
   CalendarDays, Phone, MapPin, FileText, ShieldCheck, Shield, X,
-  Lock, Camera, Upload,
+  Lock, Camera, Upload, User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -792,6 +792,7 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [greeting, setGreeting] = useState("");
+  const [greetingEmoji, setGreetingEmoji] = useState("");
   const [dashData, setDashData] = useState<any>(null);
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1069,9 +1070,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     const h = new Date().getHours();
-    if (h < 12) setGreeting("Good morning");
-    else if (h < 17) setGreeting("Good afternoon");
-    else setGreeting("Good evening");
+    if (h < 12) { setGreeting("Good morning"); setGreetingEmoji("🌅"); }
+    else if (h < 17) { setGreeting("Good afternoon"); setGreetingEmoji("☀️"); }
+    else { setGreeting("Good evening"); setGreetingEmoji("🌙"); }
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -1192,7 +1193,7 @@ export default function Dashboard() {
             </button>
             <div>
               <h1 className="font-display font-bold text-base text-foreground leading-tight">
-                {activeTab === "overview" ? `${greeting}, ${user?.username || 'investor'}` : currentNav?.label}
+                {activeTab === "overview" ? <span>{greetingEmoji} {greeting}, {user?.username || 'investor'}</span> : currentNav?.label}
               </h1>
               <p className="text-[11px] text-muted-foreground hidden sm:block">
                 {activeTab === "overview" ? "Here's your investment summary" : "SmartInvest Platform"}
@@ -1236,7 +1237,7 @@ export default function Dashboard() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.96 }}
                     transition={{ duration: 0.18 }}
-                    className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden" style={{ backgroundColor: 'hsl(var(--card))' }}>
+                    className="absolute right-0 top-full mt-2 w-80 border border-border rounded-2xl z-50 overflow-hidden" style={{ backgroundColor: '#ffffff', boxShadow: '0 20px 60px rgba(0,0,0,0.18)', backdropFilter: 'none' }}>
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                       <span className="font-semibold text-sm">Notifications</span>
                       <button onClick={() => setBellOpen(false)} className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
@@ -1284,7 +1285,10 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-2 pl-1 border-l border-border ml-1">
               <button onClick={() => fileInputRef.current?.click()} className="relative group" title="Change profile picture">
-                <AvatarIcon picture={user?.profile_picture} />
+                {user?.profile_picture && user.profile_picture.startsWith("data:image/")
+                  ? <img src={user.profile_picture} alt="Profile" className="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-2 ring-border" />
+                  : <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 ring-2 ring-border"><User className="w-4 h-4 text-primary" /></div>
+                }
                 {profilePicLoading
                   ? <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center"><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /></div>
                   : <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"><Camera className="w-3 h-3 text-white" /></div>
@@ -1683,7 +1687,7 @@ export default function Dashboard() {
                       <p className="text-xs text-muted-foreground mt-0.5">All wallet and investment activity</p>
                     </div>
                     {dashData?.recentTransactions?.length > 0 ? (
-                      <div className="divide-y divide-border">
+                      <div className="divide-y divide-border max-h-[540px] overflow-y-auto">
                         {dashData.recentTransactions.map((tx: any, i: number) => {
                           const isCredit = ["deposit","daily_return","trade_gain","referral_commission"].includes(tx.type);
                           return (

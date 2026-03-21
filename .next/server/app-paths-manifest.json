@@ -1,4 +1,5 @@
 {
+  "/api/packages/route": "app/api/packages/route.js",
   "/page": "app/page.js",
-  "/api/packages/route": "app/api/packages/route.js"
+  "/dashboard/page": "app/dashboard/page.js"
 }

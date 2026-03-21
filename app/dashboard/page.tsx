@@ -1581,7 +1581,7 @@ export default function Dashboard() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.18 }}
-                      className="fixed inset-0 z-40 bg-white"
+                      className="fixed inset-0 z-40"
                       onClick={() => setBellOpen(false)}
                     />
                     <motion.div

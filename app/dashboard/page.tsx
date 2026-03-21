@@ -1124,7 +1124,7 @@ export default function Dashboard() {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <aside className={`fixed lg:relative z-40 flex flex-col h-full bg-foreground w-64 shrink-0 transition-transform duration-300
+      <aside className={`fixed lg:relative z-40 flex flex-col h-full bg-foreground w-64 shrink-0 transition-transform duration-300 rounded-b-[6px]
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
         <div className="p-5 border-b border-white/10">
           <Link href="/" className="flex items-center gap-2.5">
@@ -1857,9 +1857,6 @@ export default function Dashboard() {
                             <span className="text-white font-bold text-sm tracking-tight">Fund with EasyBuy</span>
                           </div>
                           <p className="text-white/40 text-[11px]">Instant virtual account · Powered by Paystack</p>
-                        </div>
-                        <div className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30">
-                          <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-wider">Recommended</span>
                         </div>
                       </div>
 

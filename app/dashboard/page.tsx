@@ -1144,7 +1144,6 @@ export default function Dashboard() {
   const [authChecked, setAuthChecked] = useState(false);
 
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [bellOpen, setBellOpen] = useState(false);
   const [banks, setBanks] = useState<any[]>([]);
   const [resolving, setResolving] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
@@ -1558,84 +1557,20 @@ export default function Dashboard() {
               className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               <RefreshCw className="w-4 h-4" />
             </button>
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setBellOpen(v => !v);
-                  if (!bellOpen && unreadCount > 0) {
-                    fetch('/api/notifications', { method: 'PATCH', headers: authHeaders() }).catch(() => {});
-                    setNotifications(n => n.map(x => ({ ...x, read: true })));
-                  }
-                }}
-                className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                <Bell className="w-4 h-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
-                )}
-              </button>
-              <AnimatePresence>
-                {bellOpen && (
-                  <>
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.18 }}
-                      className="fixed inset-0 z-40"
-                      onClick={() => setBellOpen(false)}
-                    />
-                    <motion.div
-                      initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                      transition={{ duration: 0.18 }}
-                      className="fixed right-4 top-16 w-80 rounded-2xl z-50 overflow-hidden border border-gray-200 shadow-2xl bg-white">
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                        <span className="font-semibold text-sm text-gray-900">Notifications</span>
-                        <button onClick={() => setBellOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
-                        {notifications.slice(0, 8).length === 0 ? (
-                          <div className="py-8 text-center text-sm text-gray-400">No notifications yet</div>
-                        ) : notifications.slice(0, 8).map((n: any) => (
-                          <div key={n._id} className={`px-4 py-3 ${n.read ? 'bg-white' : 'bg-red-50'}`}>
-                            <div className="flex items-start gap-2.5">
-                              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                                n.type === 'login' ? 'bg-blue-100' :
-                                n.type === 'deposit' ? 'bg-emerald-100' :
-                                n.type === 'withdrawal' ? 'bg-amber-100' :
-                                n.type === 'investment' ? 'bg-violet-100' : 'bg-gray-100'
-                              }`}>
-                                {n.type === 'login' && <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />}
-                                {n.type === 'deposit' && <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />}
-                                {n.type === 'withdrawal' && <CreditCard className="w-3.5 h-3.5 text-amber-600" />}
-                                {n.type === 'investment' && <TrendingUp className="w-3.5 h-3.5 text-violet-600" />}
-                                {!['login','deposit','withdrawal','investment'].includes(n.type) && <Bell className="w-3.5 h-3.5 text-gray-400" />}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-[12px] font-semibold text-gray-900">{n.title}</div>
-                                <div className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">{n.message}</div>
-                                <div className="text-[10px] text-gray-400 mt-1">
-                                  {new Date(n.created_at).toLocaleString('en-NG', { dateStyle: 'short', timeStyle: 'short' })}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50">
-                        <button onClick={() => { setBellOpen(false); setActiveTab("notifications"); }}
-                          className="text-xs text-primary font-semibold hover:underline">
-                          View all notifications →
-                        </button>
-                      </div>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
+            <button
+              onClick={() => {
+                if (unreadCount > 0) {
+                  fetch('/api/notifications', { method: 'PATCH', headers: authHeaders() }).catch(() => {});
+                  setNotifications(n => n.map(x => ({ ...x, read: true })));
+                }
+                setActiveTab("notifications");
+              }}
+              className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
+              )}
+            </button>
             <div className="flex items-center gap-2 pl-1 border-l border-border ml-1">
               <button onClick={() => fileInputRef.current?.click()} className="relative group" title="Change profile picture">
                 {user?.profile_picture && user.profile_picture.startsWith("data:image/")

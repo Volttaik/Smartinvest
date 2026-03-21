@@ -1865,11 +1865,10 @@ export default function Dashboard() {
 
                       <div className="bg-muted/30 p-4 space-y-3">
                         {[
-                          { step: 1, icon: Wallet,       title: "Enter amount & tap Fund Wallet",         desc: "Choose a quick amount or type a custom value above, then hit the Fund Wallet button." },
-                          { step: 2, icon: CreditCard,   title: "Select EasyBuy on Paystack checkout",   desc: "On the Paystack payment page, tap the EasyBuy channel option." },
-                          { step: 3, icon: ArrowDownLeft,title: "Get your unique virtual account",        desc: "A dedicated account number is instantly generated just for this transaction." },
-                          { step: 4, icon: ArrowUpRight, title: "Transfer from your bank app",            desc: "Open your banking app and send the exact amount to the virtual account shown." },
-                          { step: 5, icon: Check,        title: "Wallet credited automatically",          desc: "Your SmartInvest wallet is funded within seconds — no manual action needed." },
+                          { step: 1, icon: Wallet,        title: "Enter amount & tap Fund Wallet",   desc: "Choose a quick amount or type a custom value above, then hit the Fund Wallet button." },
+                          { step: 2, icon: ArrowDownLeft, title: "Get your unique virtual account",   desc: "A dedicated virtual account number is generated for you on the Paystack checkout page." },
+                          { step: 3, icon: ArrowUpRight,  title: "Transfer from your bank app",      desc: "Open your banking app and send the exact amount to the virtual account number shown." },
+                          { step: 4, icon: Check,         title: "Wallet credited automatically",    desc: "Your SmartInvest wallet is funded within seconds — no manual action needed." },
                         ].map(({ step, icon: Icon, title, desc }, i, arr) => (
                           <div key={step} className="flex gap-3">
                             <div className="flex flex-col items-center">
@@ -1894,7 +1893,7 @@ export default function Dashboard() {
                       <div className="px-4 py-3 bg-amber-50 border-t border-amber-200 flex gap-2.5 items-start">
                         <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                         <p className="text-[11px] text-amber-800 leading-relaxed">
-                          Always verify the account name on checkout shows <strong>SmartInvest / EasyBuy</strong> before transferring.
+                          Always verify the virtual account name shown on Paystack checkout before making your transfer.
                         </p>
                       </div>
                     </div>
@@ -2119,7 +2118,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <p className="text-xs text-blue-800 leading-relaxed">
-                      EasyBuy is our API-level payment provider integrated through Paystack. When you fund your wallet and select the <strong>EasyBuy</strong> channel, a unique virtual bank account is generated specifically for your transaction.
+                      EasyBuy is our API-level payment provider integrated through Paystack. When you fund your wallet, Paystack generates a unique virtual bank account for your transaction through the EasyBuy infrastructure behind the scenes.
                     </p>
                     {[
                       { title: "Unique per transaction", desc: "Each virtual account number is single-use and tied to your specific top-up amount, so only the exact amount you intend to deposit is accepted." },
@@ -2137,7 +2136,7 @@ export default function Dashboard() {
                     <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex gap-2">
                       <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                       <p className="text-xs text-amber-800">
-                        <strong>Important:</strong> Always verify that the virtual account name shown on the Paystack checkout matches <strong>SmartInvest / EasyBuy</strong> before making any transfer.
+                        <strong>Important:</strong> Always verify the virtual account name shown on the Paystack checkout before making any transfer to confirm it belongs to your transaction.
                       </p>
                     </div>
                   </div>

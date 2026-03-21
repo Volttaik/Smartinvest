@@ -476,18 +476,27 @@ function PortfolioTab({ dashData, balance }: { dashData: any; balance: number })
 
       <div className="grid grid-cols-2 gap-3">
         {[
-          { label: "Portfolio Value", value: `₦${balance.toLocaleString()}`, color: "text-foreground", bg: "bg-primary/10", icon: Wallet },
-          { label: "Total Invested", value: `₦${totalInvested.toLocaleString()}`, color: "text-blue-600", bg: "bg-blue-50 border-blue-100", icon: TrendingUp },
-          { label: "Total Earned", value: `₦${totalEarned.toLocaleString()}`, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100", icon: DollarSign },
-          { label: "ROI", value: `+${roi}%`, color: "text-violet-600", bg: "bg-violet-50 border-violet-100", icon: BarChart3 },
-        ].map(({ label, value, color, bg, icon: Icon }) => (
-          <div key={label} className="bg-card border border-border rounded-2xl p-4">
-            <div className={`w-9 h-9 rounded-xl border flex items-center justify-center mb-2.5 ${bg}`}>
-              <Icon className={`w-4 h-4 ${color}`} />
+          { label: "Portfolio Value", value: `₦${balance.toLocaleString()}`,       icon: Wallet,     accent: "from-primary/10 to-primary/5",      iconBg: "bg-primary/15",   iconColor: "text-primary" },
+          { label: "Total Invested",  value: `₦${totalInvested.toLocaleString()}`,  icon: TrendingUp,  accent: "from-blue-50 to-blue-50/30",        iconBg: "bg-blue-100",     iconColor: "text-blue-600" },
+          { label: "Total Earned",    value: `₦${totalEarned.toLocaleString()}`,    icon: DollarSign,  accent: "from-emerald-50 to-emerald-50/30",  iconBg: "bg-emerald-100",  iconColor: "text-emerald-600" },
+          { label: "ROI",             value: `+${roi}%`,                            icon: BarChart3,   accent: "from-violet-50 to-violet-50/30",    iconBg: "bg-violet-100",   iconColor: "text-violet-600" },
+        ].map(({ label, value, icon: Icon, accent, iconBg, iconColor }) => (
+          <motion.div key={label}
+            whileHover={{ y: -2, boxShadow: "0 8px 24px -4px rgba(0,0,0,0.08)" }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className={`bg-gradient-to-br ${accent} border border-border rounded-2xl p-4 relative overflow-hidden`}>
+            <div className="absolute inset-0 opacity-40 pointer-events-none"
+              style={{ background: "radial-gradient(ellipse at top right, currentColor 0%, transparent 70%)" }} />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] text-muted-foreground font-semibold tracking-wide uppercase">{label}</span>
+                <div className={`w-8 h-8 rounded-xl ${iconBg} flex items-center justify-center`}>
+                  <Icon className={`w-4 h-4 ${iconColor}`} />
+                </div>
+              </div>
+              <div className="font-bold text-foreground text-[17px] leading-tight tracking-tight">{value}</div>
             </div>
-            <div className={`text-xl font-bold ${color}`}>{value}</div>
-            <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
-          </div>
+          </motion.div>
         ))}
       </div>
 

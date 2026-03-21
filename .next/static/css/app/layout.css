@@ -1743,6 +1743,10 @@ body{
 .bg-transparent{
   background-color: transparent;
 }
+.bg-violet-100{
+  --tw-bg-opacity: 1;
+  background-color: rgb(237 233 254 / var(--tw-bg-opacity, 1));
+}
 .bg-violet-50{
   --tw-bg-opacity: 1;
   background-color: rgb(245 243 255 / var(--tw-bg-opacity, 1));
@@ -1819,6 +1823,11 @@ body{
   --tw-gradient-to: rgb(4 47 46 / 0) var(--tw-gradient-to-position);
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
 }
+.from-violet-50{
+  --tw-gradient-from: #f5f3ff var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(245 243 255 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
 .from-violet-950{
   --tw-gradient-from: #2e1065 var(--tw-gradient-from-position);
   --tw-gradient-to: rgb(46 16 101 / 0) var(--tw-gradient-to-position);
@@ -1889,6 +1898,9 @@ body{
 }
 .to-transparent{
   --tw-gradient-to: transparent var(--tw-gradient-to-position);
+}
+.to-violet-50\/30{
+  --tw-gradient-to: rgb(245 243 255 / 0.3) var(--tw-gradient-to-position);
 }
 .to-violet-950{
   --tw-gradient-to: #2e1065 var(--tw-gradient-to-position);

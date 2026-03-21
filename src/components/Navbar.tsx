@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X, User, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
@@ -82,8 +82,8 @@ export default function Navbar() {
 
   const Logo = () => (
     <Link href="/" className="flex items-center gap-2.5 group" onClick={() => setMenuOpen(false)}>
-      <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm group-hover:brightness-110 transition-all flex-shrink-0">
-        <img src="/favicon.jpg" alt="SmartInvest" className="w-full h-full object-cover" />
+      <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm group-hover:brightness-110 transition-all flex-shrink-0">
+        <TrendingUp className="w-4 h-4 text-primary-foreground" />
       </div>
       <span className="text-lg font-bold tracking-tight font-display text-foreground">
         Smart Invest<span className="text-primary">.</span>

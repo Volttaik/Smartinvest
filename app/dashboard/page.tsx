@@ -56,8 +56,8 @@ function PnLChart({ chartData, totalEarned, totalInvested }: {
   });
   const displayData = view === "earnings" ? chartData : pnlData;
   const dataKey = view === "earnings" ? "earnings" : "pnl";
-  const latestVal = displayData[displayData.length - 1]?.[dataKey] ?? 0;
-  const prevVal = displayData[displayData.length - 2]?.[dataKey] ?? 0;
+  const latestVal = (displayData as any[])[displayData.length - 1]?.[dataKey] ?? 0;
+  const prevVal = (displayData as any[])[displayData.length - 2]?.[dataKey] ?? 0;
   const isUp = latestVal >= prevVal;
   const changePct = prevVal !== 0 ? (((latestVal - prevVal) / Math.abs(prevVal)) * 100).toFixed(1) : "0.0";
 

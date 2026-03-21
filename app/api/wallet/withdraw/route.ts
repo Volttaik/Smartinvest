@@ -5,7 +5,7 @@ import { Transaction } from '@/lib/models/Transaction';
 import { Notification } from '@/lib/models/Notification';
 import { verifyToken } from '@/lib/server-auth';
 
-const MIN_WITHDRAWAL = 10000;
+const MIN_WITHDRAWAL = 5000;
 
 export async function POST(req: NextRequest) {
   try {

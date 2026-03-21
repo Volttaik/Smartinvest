@@ -2284,7 +2284,7 @@ export default function Dashboard() {
                       <label className="text-sm font-medium block mb-1.5">Amount (₦)</label>
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm">₦</span>
-                        <input type="number" placeholder="Enter amount"
+                        <input type="number" placeholder="Min ₦5,000"
                           value={withdrawForm.amount}
                           onChange={e => setWithdrawForm(f => ({ ...f, amount: e.target.value }))}
                           className="w-full h-11 pl-8 pr-4 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all placeholder:text-muted-foreground" />
@@ -2347,13 +2347,15 @@ export default function Dashboard() {
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
                           className={`p-3 rounded-xl text-xs border ${
-                            parseFloat(withdrawForm.amount) > balance
+                            parseFloat(withdrawForm.amount) > balance || parseFloat(withdrawForm.amount) < 5000
                               ? 'bg-red-50 border-red-200 text-red-700'
                               : 'bg-blue-50 border-blue-200 text-blue-700'
                           }`}>
                           {parseFloat(withdrawForm.amount) > balance
                             ? 'Amount exceeds your available balance'
-                            : `Withdrawing ₦${parseFloat(withdrawForm.amount).toLocaleString()} · Remaining: ₦${(balance - parseFloat(withdrawForm.amount)).toLocaleString()}`}
+                            : parseFloat(withdrawForm.amount) < 5000
+                              ? 'Minimum withdrawal amount is ₦5,000'
+                              : `Withdrawing ₦${parseFloat(withdrawForm.amount).toLocaleString()} · Remaining: ₦${(balance - parseFloat(withdrawForm.amount)).toLocaleString()}`}
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -2361,7 +2363,7 @@ export default function Dashboard() {
                     <Button onClick={handleWithdraw}
                       disabled={withdrawLoading || !withdrawForm.amount || !withdrawForm.accountName
                         || !withdrawForm.accountNumber || !withdrawForm.bankCode
-                        || parseFloat(withdrawForm.amount) > balance || parseFloat(withdrawForm.amount) <= 0}
+                        || parseFloat(withdrawForm.amount) > balance || parseFloat(withdrawForm.amount) < 5000}
                       className="w-full h-12 bg-primary text-white rounded-xl font-semibold hover:brightness-110 transition-all">
                       {withdrawLoading
                         ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Submitting Request…</span>

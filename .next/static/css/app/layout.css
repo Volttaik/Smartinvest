@@ -967,9 +967,6 @@ body{
 .h-96{
   height: 24rem;
 }
-.h-\[160px\]{
-  height: 160px;
-}
 .h-\[180px\]{
   height: 180px;
 }
@@ -1451,6 +1448,9 @@ body{
 }
 .rounded-3xl{
   border-radius: calc(var(--radius) + 16px);
+}
+.rounded-\[10px\]{
+  border-radius: 10px;
 }
 .rounded-full{
   border-radius: 9999px;
@@ -2071,6 +2071,9 @@ body{
   -o-object-fit: cover;
      object-fit: cover;
 }
+.p-0\.5{
+  padding: 0.125rem;
+}
 .p-1{
   padding: 0.25rem;
 }
@@ -2211,8 +2214,8 @@ body{
   padding-top: 2rem;
   padding-bottom: 2rem;
 }
-.pb-1{
-  padding-bottom: 0.25rem;
+.pb-0{
+  padding-bottom: 0px;
 }
 .pb-10{
   padding-bottom: 2.5rem;
@@ -2267,6 +2270,9 @@ body{
 }
 .pt-0{
   padding-top: 0px;
+}
+.pt-1{
+  padding-top: 0.25rem;
 }
 .pt-12{
   padding-top: 3rem;
@@ -2650,6 +2656,9 @@ body{
 .opacity-0{
   opacity: 0;
 }
+.opacity-15{
+  opacity: 0.15;
+}
 .opacity-20{
   opacity: 0.2;
 }
@@ -2658,6 +2667,9 @@ body{
 }
 .opacity-40{
   opacity: 0.4;
+}
+.opacity-60{
+  opacity: 0.6;
 }
 .opacity-90{
   opacity: 0.9;

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import {
   AreaChart, Area, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip,
-  PieChart, Pie, Cell
+  PieChart, Pie, Cell, ReferenceLine
 } from "recharts";
 import {
   TrendingUp, TrendingDown, LogOut, BarChart3, Wallet,
@@ -57,76 +57,114 @@ function PnLChart({ chartData, totalEarned, totalInvested }: {
   totalInvested: number;
 }) {
   const [view, setView] = useState<"earnings" | "pnl">("earnings");
+
   const pnlData = chartData.map((d, i) => {
     const cumEarned = chartData.slice(0, i + 1).reduce((s, x) => s + x.earnings, 0);
     const cumInvested = chartData.slice(0, i + 1).reduce((s, x) => s + x.invested, 0);
     return { ...d, pnl: cumEarned - cumInvested };
   });
+
   const displayData = view === "earnings" ? chartData : pnlData;
   const dataKey = view === "earnings" ? "earnings" : "pnl";
   const latestVal = (displayData as any[])[displayData.length - 1]?.[dataKey] ?? 0;
   const prevVal = (displayData as any[])[displayData.length - 2]?.[dataKey] ?? 0;
   const isUp = latestVal >= prevVal;
   const changePct = prevVal !== 0 ? (((latestVal - prevVal) / Math.abs(prevVal)) * 100).toFixed(1) : "0.0";
+  const strokeColor = isUp ? "#10b981" : "#ef4444";
+  const hasData = chartData.length > 0 && chartData.some(d => d.earnings > 0 || d.invested > 0);
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="font-semibold text-sm text-foreground">Your Profit & Loss</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Based on your investment activity</p>
+          <h3 className="font-semibold text-sm text-foreground">Profit & Loss</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Your investment performance over time</p>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1 bg-muted rounded-xl p-0.5">
           {(["earnings", "pnl"] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all capitalize
-                ${view === v ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
-              {v === "earnings" ? "Returns" : "P&L"}
+              className={`px-3 py-1 rounded-[10px] text-xs font-semibold transition-all
+                ${view === v ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              {v === "earnings" ? "Returns" : "Net P&L"}
             </button>
           ))}
         </div>
       </div>
 
-      {chartData.length === 0 ? (
-        <div className="h-[160px] flex flex-col items-center justify-center text-muted-foreground">
-          <BarChart3 className="w-8 h-8 mb-2 opacity-20" />
-          <p className="text-sm">P&L chart appears after your first investment</p>
+      {!hasData ? (
+        <div className="h-[180px] flex flex-col items-center justify-center text-muted-foreground gap-2">
+          <BarChart3 className="w-10 h-10 opacity-15" />
+          <p className="text-sm font-medium">Chart appears after your first investment</p>
+          <p className="text-xs opacity-60">Start investing to see your P&L history</p>
         </div>
       ) : (
         <>
-          <div className="flex items-baseline gap-2 mb-3">
-            <span className={`text-2xl font-bold ${latestVal >= 0 ? "text-foreground" : "text-red-500"}`}>
+          <div className="flex items-baseline gap-2 mb-4">
+            <span className={`text-3xl font-bold font-display ${latestVal >= 0 ? "text-foreground" : "text-red-500"}`}>
               ₦{Math.abs(latestVal).toLocaleString()}
             </span>
-            <span className={`text-sm font-semibold flex items-center gap-0.5 ${isUp ? "text-emerald-600" : "text-red-500"}`}>
-              {isUp ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+            <span className={`text-sm font-semibold flex items-center gap-0.5 px-2 py-0.5 rounded-full
+              ${isUp ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"}`}>
+              {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
               {isUp ? "+" : ""}{changePct}%
             </span>
-            <span className="text-xs text-muted-foreground">vs last month</span>
+            <span className="text-xs text-muted-foreground">vs last period</span>
           </div>
-          <ResponsiveContainer width="100%" height={140}>
-            <AreaChart data={displayData}>
+
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={displayData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="pnl-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0.3} />
-                  <stop offset="100%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0} />
+                  <stop offset="0%" stopColor={strokeColor} stopOpacity={0.25} />
+                  <stop offset="75%" stopColor={strokeColor} stopOpacity={0.05} />
+                  <stop offset="100%" stopColor={strokeColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false}
-                tickFormatter={v => `₦${(v / 1000).toFixed(0)}k`} />
+              <CartesianGrid strokeDasharray="3 6" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                axisLine={false} tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                axisLine={false} tickLine={false} width={52}
+                tickFormatter={v => v >= 1000 ? `₦${(v / 1000).toFixed(0)}k` : `₦${v}`}
+              />
               <Tooltip
                 formatter={(v: any) => [`₦${parseFloat(v).toLocaleString()}`, view === "earnings" ? "Returns" : "Net P&L"]}
-                contentStyle={{ borderRadius: 10, border: "1px solid hsl(var(--border))", fontSize: 11 }} />
-              <Area type="monotone" dataKey={dataKey}
-                stroke={isUp ? "#10b981" : "#ef4444"}
-                fill="url(#pnl-grad)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                contentStyle={{
+                  borderRadius: 12, border: "1px solid hsl(var(--border))",
+                  fontSize: 11, boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                  background: "#fff"
+                }}
+                labelStyle={{ fontWeight: 600, marginBottom: 2 }}
+              />
+              {view === "pnl" && <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1.5} strokeDasharray="4 4" />}
+              <Area
+                type="monotone"
+                dataKey={dataKey}
+                stroke={strokeColor}
+                fill="url(#pnl-grad)"
+                strokeWidth={2.5}
+                dot={displayData.length <= 6 ? { fill: strokeColor, r: 3, stroke: "#fff", strokeWidth: 1.5 } : false}
+                activeDot={{ r: 5, fill: strokeColor, stroke: "#fff", strokeWidth: 2 }}
+                animationDuration={800}
+              />
             </AreaChart>
           </ResponsiveContainer>
-          <div className="flex justify-between text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
-            <span>Total Earned: <span className="text-emerald-600 font-semibold">₦{totalEarned.toLocaleString()}</span></span>
-            <span>Total Invested: <span className="text-foreground font-semibold">₦{totalInvested.toLocaleString()}</span></span>
+
+          <div className="flex justify-between items-center text-xs mt-3 pt-3 border-t border-border">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-muted-foreground">Total Earned:</span>
+              <span className="font-semibold text-emerald-600">₦{totalEarned.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-primary" />
+              <span className="text-muted-foreground">Invested:</span>
+              <span className="font-semibold text-foreground">₦{totalInvested.toLocaleString()}</span>
+            </div>
           </div>
         </>
       )}
@@ -537,28 +575,44 @@ function PortfolioTab({ dashData, balance }: { dashData: any; balance: number })
       )}
 
       <div className="bg-card border border-border rounded-2xl p-5">
-        <h3 className="font-semibold text-sm mb-4">Earnings History</h3>
-        {dashData?.chartData?.length > 0 ? (
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-sm">Earnings History</h3>
+          {dashData?.chartData?.length > 0 && (
+            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Monthly</span>
+          )}
+        </div>
+        {dashData?.chartData?.some((d: any) => d.earnings > 0) ? (
           <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={dashData.chartData}>
+            <AreaChart data={dashData.chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="port-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.28} />
+                  <stop offset="80%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
                   <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(v: any) => [`₦${parseFloat(v).toLocaleString()}`, "Earnings"]}
-                contentStyle={{ borderRadius: 12, border: '1px solid hsl(var(--border))', fontSize: 11 }} />
+              <CartesianGrid strokeDasharray="3 6" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={52}
+                tickFormatter={v => v >= 1000 ? `₦${(v / 1000).toFixed(0)}k` : `₦${v}`} />
+              <Tooltip
+                formatter={(v: any) => [`₦${parseFloat(v).toLocaleString()}`, "Earnings"]}
+                contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", fontSize: 11, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", background: "#fff" }}
+                labelStyle={{ fontWeight: 600, marginBottom: 2 }}
+              />
               <Area type="monotone" dataKey="earnings" stroke="hsl(var(--primary))"
-                fill="url(#port-grad)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                fill="url(#port-grad)" strokeWidth={2.5}
+                dot={dashData.chartData.length <= 6 ? { fill: "hsl(var(--primary))", r: 3, stroke: "#fff", strokeWidth: 1.5 } : false}
+                activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "#fff", strokeWidth: 2 }}
+                animationDuration={800}
+              />
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-[180px] flex items-center justify-center text-muted-foreground text-sm">
-            No earnings history yet
+          <div className="h-[180px] flex flex-col items-center justify-center text-muted-foreground gap-2">
+            <BarChart3 className="w-10 h-10 opacity-15" />
+            <p className="text-sm font-medium">No earnings history yet</p>
+            <p className="text-xs opacity-60">Earnings will appear here once recorded</p>
           </div>
         )}
       </div>
@@ -621,29 +675,30 @@ const NGN_TO_USD = 1 / 1650;
 function generateTradingPoints(
   principal: number,
   dailyReturnPct: number,
-  totalEarned: number,
-  seed: number
+  seed: number,
+  upToMinute?: number
 ): { time: string; value: number; pnl: number }[] {
   const target = principal * (dailyReturnPct / 100);
-  const points = 48;
+  const totalMins = 24 * 60;
+  const step = 15; // one point every 15 min
+  const totalPoints = totalMins / step; // 96 points
+  const cutoff = upToMinute !== undefined ? Math.ceil(upToMinute / step) : totalPoints;
   const data: { time: string; value: number; pnl: number }[] = [];
-  let current = 0;
-  const rng = (n: number) => {
-    const x = Math.sin(seed * 9301 + n * 49297 + 233720) * 0.5 + 0.5;
-    return x;
-  };
-  for (let i = 0; i <= points; i++) {
-    const progress = i / points;
-    const noise = (rng(i) - 0.48) * target * 0.6;
+  const rng = (n: number) => (Math.sin(seed * 9301 + n * 49297 + 233720) * 0.5 + 0.5);
+  for (let i = 0; i <= Math.min(cutoff, totalPoints); i++) {
+    const progress = i / totalPoints;
+    const noise = (rng(i) - 0.47) * target * 0.55 * (1 - progress * 0.5);
     const trend = target * progress;
-    current = trend + noise * (1 - progress * 0.6);
-    const h = Math.floor((i / points) * 24);
-    const m = Math.floor(((i / points) * 24 - h) * 60);
-    const label = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-    data.push({ time: label, value: parseFloat((principal + current).toFixed(2)), pnl: parseFloat(current.toFixed(2)) });
+    const pnl = i === totalPoints ? target : parseFloat((trend + noise).toFixed(2));
+    const minOfDay = i * step;
+    const h = Math.floor(minOfDay / 60);
+    const m = minOfDay % 60;
+    data.push({
+      time: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
+      value: parseFloat((principal + pnl).toFixed(2)),
+      pnl,
+    });
   }
-  data[points].value = parseFloat((principal + target).toFixed(2));
-  data[points].pnl = parseFloat(target.toFixed(2));
   return data;
 }
 
@@ -652,17 +707,30 @@ function MyAssetCard({ inv, usdRate }: { inv: any; usdRate: number }) {
   const asset = ASSET_MAP[assetKey] || ASSET_MAP["Starter"];
   const principal = parseFloat(inv.amount) || 0;
   const dailyReturnPct = parseFloat(inv.daily_return_pct) || 0;
-  const totalEarned = parseFloat(inv.total_earned) || 0;
   const seed = inv.id ? parseInt(inv.id.slice(-4), 16) : 1;
-  const chartData = generateTradingPoints(principal, dailyReturnPct, totalEarned, seed);
-  const currentPnl = chartData[chartData.length - 1].pnl;
-  const isProfit = currentPnl >= 0;
-  const usdValue = (principal * NGN_TO_USD) / usdRate;
+
+  const getNow = () => {
+    const n = new Date();
+    return n.getHours() * 60 + n.getMinutes();
+  };
+  const [nowMin, setNowMin] = useState(getNow);
   const [hoveredPoint, setHoveredPoint] = useState<{ value: number; pnl: number; time: string } | null>(null);
-  const displayed = hoveredPoint || chartData[chartData.length - 1];
+
+  useEffect(() => {
+    const t = setInterval(() => setNowMin(getNow()), 60000);
+    return () => clearInterval(t);
+  }, []);
+
+  const chartData = generateTradingPoints(principal, dailyReturnPct, seed, nowMin);
+  const latest = chartData[chartData.length - 1];
+  const displayed = hoveredPoint || latest;
+  const isProfit = latest.pnl >= 0;
+  const usdValue = usdRate > 0 ? (principal * NGN_TO_USD) / usdRate : 0;
+  const strokeColor = isProfit ? "#10b981" : "#ef4444";
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+      {/* Header */}
       <div className="p-4 flex items-center justify-between border-b border-gray-100">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${asset.bg}`}>
@@ -674,65 +742,88 @@ function MyAssetCard({ inv, usdRate }: { inv: any; usdRate: number }) {
           </div>
         </div>
         <div className="text-right">
-          <p className="text-xs text-gray-400">Value in {asset.symbol.replace("=F","")}</p>
+          <p className="text-[10px] text-gray-400">Value in {asset.symbol.replace("=F","")}</p>
           <p className="text-sm font-bold text-gray-900">
-            {usdRate > 0 ? `${usdValue.toFixed(usdValue < 0.01 ? 6 : 4)} ${asset.symbol.replace("=F","")}` : "…"}
+            {usdValue > 0 ? `${usdValue.toFixed(usdValue < 0.001 ? 6 : usdValue < 1 ? 4 : 2)} ${asset.symbol.replace("=F","")}` : "—"}
           </p>
         </div>
       </div>
 
-      <div className="px-4 pt-3 pb-1 flex items-end justify-between">
+      {/* Live P&L display */}
+      <div className="px-4 pt-3 pb-0 flex items-end justify-between">
         <div>
           <p className="text-[10px] text-gray-400 uppercase tracking-wider">Principal</p>
           <p className="text-lg font-bold text-gray-900">₦{principal.toLocaleString()}</p>
         </div>
         <div className="text-right">
           <p className="text-[10px] text-gray-400 uppercase tracking-wider">
-            {hoveredPoint ? hoveredPoint.time : "Today's Return"}
+            {hoveredPoint ? `@ ${hoveredPoint.time}` : "Current P&L"}
           </p>
-          <p className={`text-base font-bold ${displayed.pnl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-            {displayed.pnl >= 0 ? "+" : ""}₦{displayed.pnl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          <p className={`text-lg font-bold ${displayed.pnl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+            {displayed.pnl >= 0 ? "+" : ""}₦{Math.abs(displayed.pnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </p>
         </div>
       </div>
 
-      <div className="px-1 pb-1">
-        <ResponsiveContainer width="100%" height={100}>
-          <AreaChart data={chartData} onMouseLeave={() => setHoveredPoint(null)}>
+      {/* Chart */}
+      <div className="px-1 pt-1 pb-0">
+        <ResponsiveContainer width="100%" height={110}>
+          <AreaChart
+            data={chartData}
+            margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+            onMouseMove={(e: any) => {
+              if (e.activePayload && e.activePayload[0]) {
+                setHoveredPoint(e.activePayload[0].payload);
+              }
+            }}
+            onMouseLeave={() => setHoveredPoint(null)}
+          >
             <defs>
               <linearGradient id={`grad-${seed}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={isProfit ? "#10b981" : "#ef4444"} stopOpacity={0.18} />
-                <stop offset="95%" stopColor={isProfit ? "#10b981" : "#ef4444"} stopOpacity={0} />
+                <stop offset="0%" stopColor={strokeColor} stopOpacity={0.22} />
+                <stop offset="100%" stopColor={strokeColor} stopOpacity={0} />
               </linearGradient>
             </defs>
+            <CartesianGrid strokeDasharray="2 4" stroke="#f0f0f0" vertical={false} />
+            <XAxis dataKey="time" tick={{ fontSize: 8, fill: "#9ca3af" }} tickLine={false} axisLine={false} interval={11} />
+            <YAxis hide domain={["auto", "auto"]} />
             <Tooltip
-              content={({ active, payload }) => {
-                if (active && payload && payload[0]) {
-                  const d = payload[0].payload as { time: string; value: number; pnl: number };
-                  setHoveredPoint(d);
-                }
-                return null;
+              cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: "3 3" }}
+              content={({ payload }) => {
+                if (!payload || !payload[0]) return null;
+                const d = payload[0].payload as { time: string; value: number; pnl: number };
+                return (
+                  <div className="bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 shadow-lg text-[11px]">
+                    <p className="text-gray-400">{d.time}</p>
+                    <p className={`font-bold ${d.pnl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                      {d.pnl >= 0 ? "+" : ""}₦{Math.abs(d.pnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </p>
+                  </div>
+                );
               }}
             />
             <Area
               type="monotone"
               dataKey="value"
-              stroke={isProfit ? "#10b981" : "#ef4444"}
+              stroke={strokeColor}
               strokeWidth={2}
               fill={`url(#grad-${seed})`}
               dot={false}
-              activeDot={{ r: 3, fill: isProfit ? "#10b981" : "#ef4444" }}
+              activeDot={{ r: 3.5, fill: strokeColor, stroke: "#fff", strokeWidth: 1.5 }}
+              animationDuration={600}
             />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-        <span className="text-[11px] text-gray-500">
-          Day {inv.days_completed}/{inv.duration_days} · {dailyReturnPct}%/day
-        </span>
+      {/* Footer */}
+      <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[11px] text-gray-500">Day {inv.days_completed}/{inv.duration_days}</span>
+        </div>
         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${isProfit ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>
-          {isProfit ? "+" : ""}{dailyReturnPct}% target
+          {isProfit ? "+" : ""}{dailyReturnPct}% daily target
         </span>
       </div>
     </div>

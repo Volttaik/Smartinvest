@@ -1250,6 +1250,12 @@ body{
 .resize-none{
   resize: none;
 }
+.list-inside{
+  list-style-position: inside;
+}
+.list-decimal{
+  list-style-type: decimal;
+}
 .appearance-none{
   -webkit-appearance: none;
      -moz-appearance: none;
@@ -1651,6 +1657,9 @@ body{
 .bg-background\/80{
   background-color: hsl(var(--background) / 0.8);
 }
+.bg-black\/0{
+  background-color: rgb(0 0 0 / 0);
+}
 .bg-black\/40{
   background-color: rgb(0 0 0 / 0.4);
 }
@@ -1868,6 +1877,9 @@ body{
 }
 .bg-white\/5{
   background-color: rgb(255 255 255 / 0.05);
+}
+.bg-white\/60{
+  background-color: rgb(255 255 255 / 0.6);
 }
 .bg-yellow-100{
   --tw-bg-opacity: 1;
@@ -2195,6 +2207,12 @@ body{
 .pl-4{
   padding-left: 1rem;
 }
+.pl-5{
+  padding-left: 1.25rem;
+}
+.pl-6{
+  padding-left: 1.5rem;
+}
 .pl-8{
   padding-left: 2rem;
 }
@@ -2373,6 +2391,10 @@ body{
 .text-blue-800{
   --tw-text-opacity: 1;
   color: rgb(30 64 175 / var(--tw-text-opacity, 1));
+}
+.text-blue-900{
+  --tw-text-opacity: 1;
+  color: rgb(30 58 138 / var(--tw-text-opacity, 1));
 }
 .text-current{
   color: currentColor;
@@ -3012,6 +3034,14 @@ body{
 
 .group:hover .group-hover\:border-primary{
   border-color: hsl(var(--primary));
+}
+
+.group:hover .group-hover\:bg-black\/40{
+  background-color: rgb(0 0 0 / 0.4);
+}
+
+.group:hover .group-hover\:bg-black\/50{
+  background-color: rgb(0 0 0 / 0.5);
 }
 
 .group:hover .group-hover\:bg-primary{

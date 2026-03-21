@@ -15,6 +15,7 @@ import {
   Coins, LineChart, Flame,
   UserCircle, BellRing, ChevronDown, Search, CheckCheck,
   CalendarDays, Phone, MapPin, FileText, ShieldCheck, Shield, X,
+  Lock, Camera, Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,7 @@ function AvatarIcon({ picture, size = "md" }: { picture?: string; size?: "sm" | 
 }
 
 const PIE_COLORS = ["hsl(var(--primary))", "#3b82f6", "#10b981", "#8b5cf6", "#f97316"];
-type Tab = "overview" | "invest" | "transactions" | "referrals" | "fund" | "withdraw" | "portfolio" | "assets" | "profile" | "notifications";
+type Tab = "overview" | "invest" | "transactions" | "referrals" | "fund" | "withdraw" | "portfolio" | "assets" | "profile" | "notifications" | "security";
 declare const PaystackPop: any;
 
 /* ─────────────────────────────────────────
@@ -815,10 +816,40 @@ export default function Dashboard() {
     date_of_birth: "", gender: "", address: "", phone: "", bio: "", nin: ""
   });
   const [profileSaving, setProfileSaving] = useState(false);
+  const [profilePicLoading, setProfilePicLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const authHeaders = () => {
     const tok = localStorage.getItem('si_token');
     return { 'Content-Type': 'application/json', ...(tok ? { Authorization: `Bearer ${tok}` } : {}) };
+  };
+
+  const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { showNotif("error", "Image must be under 2 MB"); return; }
+    setProfilePicLoading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const base64 = ev.target?.result as string;
+        const res = await fetch('/api/user/profile', {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify({ profile_picture: base64 }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        await refreshUser();
+        showNotif("success", "Profile picture updated!");
+        setProfilePicLoading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      showNotif("error", err.message || "Failed to update profile picture.");
+      setProfilePicLoading(false);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   useEffect(() => {
@@ -855,16 +886,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!authChecked) return;
-    const interval = setInterval(() => {
+    const dashInterval = setInterval(() => {
       fetch('/api/dashboard', { headers: authHeaders() })
         .then(r => r.ok ? r.json() : null)
-        .then(data => { if (data) setDashData(data); })
+        .then(data => { if (data) { setDashData(data); } })
         .catch(() => {});
+    }, 30000);
+    const notifInterval = setInterval(() => {
       fetch('/api/notifications', { headers: authHeaders() })
         .then(r => r.json()).then(data => { if (Array.isArray(data)) setNotifications(data); })
         .catch(() => {});
-    }, 30000);
-    return () => clearInterval(interval);
+    }, 10000);
+    return () => { clearInterval(dashInterval); clearInterval(notifInterval); };
   }, [authChecked]);
 
   useEffect(() => {
@@ -1053,12 +1086,22 @@ export default function Dashboard() {
     { id: "withdraw",       icon: CreditCard,    label: "Withdraw" },
     { id: "notifications",  icon: BellRing,      label: "Notifications", badge: unreadCount },
     { id: "profile",        icon: UserCircle,    label: "Profile" },
+    { id: "security",       icon: Lock,          label: "Security" },
   ] as const;
 
   const currentNav = navItems.find(n => n.id === activeTab);
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
+
+      {/* Hidden file input for profile picture */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleProfilePicUpload}
+      />
 
       {/* Toast */}
       <AnimatePresence>
@@ -1166,7 +1209,7 @@ export default function Dashboard() {
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:brightness-110 transition-all">
               <Plus className="w-3.5 h-3.5" /> Add Funds
             </button>
-            <button onClick={() => window.location.reload()}
+            <button onClick={async () => { setLoading(true); await loadDashboard(); await refreshUser(); fetch('/api/notifications', { headers: authHeaders() }).then(r => r.json()).then(d => { if (Array.isArray(d)) setNotifications(d); }).catch(() => {}); }}
               className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -1192,7 +1235,7 @@ export default function Dashboard() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.96 }}
                     transition={{ duration: 0.18 }}
-                    className="absolute right-0 top-full mt-2 w-80 bg-white border border-border rounded-2xl shadow-2xl z-50 overflow-hidden">
+                    className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden" style={{ backgroundColor: 'hsl(var(--card))' }}>
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                       <span className="font-semibold text-sm">Notifications</span>
                       <button onClick={() => setBellOpen(false)} className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
@@ -1239,7 +1282,13 @@ export default function Dashboard() {
               </AnimatePresence>
             </div>
             <div className="flex items-center gap-2 pl-1 border-l border-border ml-1">
-              <AvatarIcon picture={user?.profile_picture} />
+              <button onClick={() => fileInputRef.current?.click()} className="relative group" title="Change profile picture">
+                <AvatarIcon picture={user?.profile_picture} />
+                {profilePicLoading
+                  ? <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center"><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /></div>
+                  : <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"><Camera className="w-3 h-3 text-white" /></div>
+                }
+              </button>
               <span className="hidden sm:block text-xs font-semibold text-foreground truncate max-w-[80px]">{user?.username}</span>
             </div>
           </div>
@@ -1796,6 +1845,23 @@ export default function Dashboard() {
                       <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                       256-bit SSL encryption · Powered by Paystack
                     </div>
+
+                    <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span className="text-sm font-semibold text-blue-800">How to Fund Using EasyBuy Channel</span>
+                      </div>
+                      <p className="text-xs text-blue-700 leading-relaxed">
+                        EasyBuy is our payment API provider. When prompted in the Paystack checkout, select <strong>EasyBuy</strong> as your payment channel to find your dedicated virtual account number safely and securely.
+                      </p>
+                      <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
+                        <li>Enter your desired amount above and tap <strong>Fund Wallet</strong></li>
+                        <li>On the Paystack checkout, choose the <strong>EasyBuy</strong> channel</li>
+                        <li>A unique virtual account number will be generated for you</li>
+                        <li>Transfer the exact amount to that account from your bank app</li>
+                        <li>Your wallet will be credited automatically within seconds</li>
+                      </ol>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -1966,13 +2032,114 @@ export default function Dashboard() {
                 </motion.div>
               )}
 
+              {/* ═══ SECURITY ═══ */}
+              {activeTab === "security" && (
+                <motion.div key="security"
+                  initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.28 }} className="p-5 space-y-5">
+
+                  <div className="bg-gradient-to-br from-foreground to-foreground/90 rounded-3xl p-6 text-white">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center mb-4">
+                      <Lock className="w-6 h-6 text-primary" />
+                    </div>
+                    <h2 className="text-2xl font-bold font-display mb-1">Your Security</h2>
+                    <p className="text-white/60 text-sm">How your transactions and data are kept safe on SmartInvest.</p>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                        <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-sm">Secured by Paystack</h3>
+                        <p className="text-xs text-muted-foreground">Nigeria's most trusted payment infrastructure</p>
+                      </div>
+                    </div>
+                    {[
+                      { title: "PCI DSS Compliant", desc: "All card and payment data is handled in compliance with Payment Card Industry Data Security Standards. Your card details are never stored on our servers." },
+                      { title: "256-bit SSL Encryption", desc: "Every transaction between your browser and our servers is encrypted using bank-grade 256-bit SSL, ensuring your data cannot be intercepted." },
+                      { title: "3D Secure Authentication", desc: "Transactions are protected by 3D Secure (3DS), which adds an extra verification step with your bank before any payment is completed." },
+                      { title: "Instant Transaction Alerts", desc: "You receive an in-app notification for every deposit, withdrawal, and investment activity on your account in real time." },
+                    ].map(({ title, desc }) => (
+                      <div key={title} className="p-4 rounded-xl bg-muted/30 border border-border">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                          <span className="text-sm font-semibold text-foreground">{title}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed pl-6">{desc}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 space-y-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                        <Shield className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-sm text-blue-900">EasyBuy — Our Payment Channel</h3>
+                        <p className="text-xs text-blue-700">Safe virtual account funding powered by EasyBuy</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-blue-800 leading-relaxed">
+                      EasyBuy is our API-level payment provider integrated through Paystack. When you fund your wallet and select the <strong>EasyBuy</strong> channel, a unique virtual bank account is generated specifically for your transaction.
+                    </p>
+                    {[
+                      { title: "Unique per transaction", desc: "Each virtual account number is single-use and tied to your specific top-up amount, so only the exact amount you intend to deposit is accepted." },
+                      { title: "Instant crediting", desc: "Once your bank transfer reaches the virtual account, your SmartInvest wallet is credited automatically within seconds — no manual confirmation needed." },
+                      { title: "No third-party access", desc: "EasyBuy does not store or share your bank account details. All account resolution is handled securely within Paystack's encrypted infrastructure." },
+                    ].map(({ title, desc }) => (
+                      <div key={title} className="p-3 rounded-xl bg-white/60 border border-blue-100">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                          <span className="text-xs font-semibold text-blue-900">{title}</span>
+                        </div>
+                        <p className="text-xs text-blue-700 leading-relaxed pl-5">{desc}</p>
+                      </div>
+                    ))}
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-800">
+                        <strong>Important:</strong> Always verify that the virtual account name shown on the Paystack checkout matches <strong>SmartInvest / EasyBuy</strong> before making any transfer.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-2xl p-5">
+                    <h3 className="font-semibold text-sm mb-3">Security Tips</h3>
+                    <div className="space-y-3">
+                      {[
+                        "Never share your login credentials or OTP with anyone, including SmartInvest support.",
+                        "Always access the platform from the official SmartInvest URL.",
+                        "Log out of your account when using shared or public devices.",
+                        "If you suspect unauthorized activity, contact support immediately.",
+                      ].map((tip, i) => (
+                        <div key={i} className="flex gap-3">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-[10px] font-bold text-primary">{i + 1}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">{tip}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {activeTab === "profile" && (
                 <motion.div key="profile"
                   initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   transition={{ duration: 0.28 }} className="p-5 space-y-5">
 
                   <div className="bg-gradient-to-br from-foreground to-foreground/90 rounded-3xl p-6 text-white flex items-center gap-4">
-                    <AvatarIcon picture={user?.profile_picture} size="lg" />
+                    <button onClick={() => fileInputRef.current?.click()} className="relative group shrink-0" title="Change profile picture">
+                      <AvatarIcon picture={user?.profile_picture} size="lg" />
+                      {profilePicLoading
+                        ? <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /></div>
+                        : <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all flex-col gap-0.5"><Camera className="w-5 h-5 text-white" /><span className="text-[9px] text-white font-medium">Change</span></div>
+                      }
+                    </button>
                     <div>
                       <h2 className="text-2xl font-bold font-display">{user?.username}</h2>
                       <p className="text-white/50 text-sm mt-0.5">{user?.email}</p>

@@ -1,100 +1,92 @@
 # SmartInvest — AI-Powered Investment Platform
 
-A fully functional investment platform with real backend, Paystack payments, internal trading simulation, and comprehensive user management.
+A full-stack Next.js investment platform with MongoDB, Paystack payments, and a comprehensive user dashboard.
 
 ## Architecture
 
-- **Frontend:** React 18 + TypeScript + Vite (port 5000)
-- **Backend:** Node.js + Express (port 8000)
-- **Database:** PostgreSQL (Replit built-in)
-- **Payments:** Paystack (deposits + withdrawals)
-- **Auth:** JWT + bcrypt
-- **Styling:** Tailwind CSS v3 + Radix UI
+- **Framework:** Next.js 14 (App Router, TypeScript)
+- **Frontend:** React 18 + Tailwind CSS + Framer Motion + Recharts
+- **Backend:** Next.js Route Handlers (API routes)
+- **Database:** MongoDB (Mongoose ODM)
+- **Payments:** Paystack (deposits via EasyBuy channel + bank withdrawals)
+- **Auth:** JWT (jsonwebtoken) + bcryptjs
+- **Styling:** Tailwind CSS v3 + Radix UI components
 
-## Features
+## Key Environment Variables
 
-### User System
-- Registration with 4-step flow (Account → Password → Avatar selection → Confirm)
-- 8 profile avatar options
-- CAPTCHA (4-digit code) on login and registration to prevent bots
-- JWT authentication (7-day expiry)
-- Referral system: unique codes, 5% commission on referred investments
-
-### Investment Packages (30 total)
-- 6 tiers: Starter (₦5k-₦7k), Basic (₦7.5k-₦9.5k), Standard (₦10k-₦13k), Advanced (₦14k-₦17.5k), Professional (₦18k-₦21k), Executive (₦22k-₦25k)
-- Daily return percentages: 0.5% to 3.5%
-- Durations: 20 to 60 days
-
-### Financial System
-- Wallet funding via Paystack (inline popup)
-- Automated withdrawals via Paystack bank transfer (min ₦10,000)
-- Daily returns credited every 6 hours (cron)
-- Internal trading simulation every 4 hours (50% gain, 40% loss probability)
-- All transactions logged to PostgreSQL
-
-### Pages
-- **/** — Landing page with live packages from backend
-- **/login** — Auth with CAPTCHA
-- **/register** — 4-step registration with avatar selection
-- **/dashboard** — Full dashboard: overview, invest, transactions, referrals, fund, withdraw
-- **/portfolio** — Investment history, trade log, allocation chart
-- **/support** — FAQ + contact form
-- **/privacy** — Privacy policy
-- **/terms** — Terms & conditions
+Set these in Replit Secrets:
+- `MONGODB_URI` — MongoDB connection string
+- `JWT_SECRET` — JWT signing key
+- `PAYSTACK_SECRET_KEY` — Paystack secret key (sk_live_... or sk_test_...)
+- `PAYSTACK_PUBLIC_KEY` / `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` — Paystack public key
+- `CRON_SECRET` — Secret for cron job endpoint
+- `INIT_SECRET` — Secret for DB init endpoint
 
 ## Project Structure
 
 ```
-server/
-  index.js          — Express app entry (port 8000)
-  db.js             — PostgreSQL connection
-  middleware/
-    auth.js         — JWT middleware
-  routes/
-    auth.js         — Register, login, captcha, /me
-    packages.js     — Get packages, invest
-    investments.js  — Investment history
-    wallet.js       — Fund, verify, withdraw, transactions
-    dashboard.js    — Dashboard + portfolio data
-    referrals.js    — Referral stats
-  seeds/
-    packages.js     — Seeds 30 investment packages
-  lib/
-    paystack.js     — Paystack API client
-    cron.js         — Daily returns + trading simulation
+app/
+  page.tsx              — Landing page
+  layout.tsx            — Root layout with AuthProvider
+  providers.tsx         — Client-side AuthProvider + useAuth
+  dashboard/page.tsx    — Full dashboard (2000+ lines, all tabs in one file)
+  api/
+    auth/login|register|me/  — Authentication endpoints
+    dashboard/           — Main dashboard data endpoint
+    packages/            — Investment packages + invest action
+    wallet/fund|verify|withdraw|transactions/ — Wallet operations
+    notifications/       — Notifications (GET list, PATCH mark-read)
+    user/profile/        — Profile update (including profile_picture)
+    banks/               — Nigerian bank list + account resolution
+    admin/               — Admin endpoints (stats, users, packages, etc.)
+    init/                — DB seeding endpoint
+
+lib/
+  db.ts                 — MongoDB connection singleton (imports all models)
+  server-auth.ts        — JWT sign/verify
+  models/
+    User.ts             — User schema
+    Package.ts          — Investment package schema
+    Investment.ts       — User investment schema
+    Transaction.ts      — Transaction log schema
+    Notification.ts     — User notifications schema
+    Trade.ts            — Trading simulation schema
 
 src/
+  components/           — Landing page components (Navbar, Hero, etc.)
+  components/ui/        — Radix-based UI primitives
   lib/
-    api.ts          — Axios client + all API functions
-    auth.tsx        — AuthContext + useAuth hook
-  components/
-    ProtectedRoute.tsx — Redirects to /login if not authenticated
-    Navbar.tsx      — Auth-aware navigation
-    Pricing.tsx     — 30 live packages from backend
-    Footer.tsx      — Links to all pages
-  pages/
-    Login.tsx       — Real auth + CAPTCHA
-    Register.tsx    — 4-step flow + avatar + CAPTCHA
-    Dashboard.tsx   — Full dashboard with real data
-    Portfolio.tsx   — Portfolio + trade log
-    Support.tsx     — FAQ + contact
-    PrivacyPolicy.tsx — Privacy policy
-    Terms.tsx       — Terms & conditions
+    api.ts              — Axios client + API functions
+    auth.tsx            — AuthContext + useAuth hook
+
+scripts/
+  init-db.js            — Seeds investment packages
 ```
 
-## Environment Variables
+## Dashboard Tabs
 
-Set these in Replit Secrets or server/.env:
-- `DATABASE_URL` — Auto-set by Replit PostgreSQL
-- `JWT_SECRET` — JWT signing key
-- `PAYSTACK_SECRET_KEY` — Paystack secret key (sk_live_... or sk_test_...)
-- `PAYSTACK_PUBLIC_KEY` — Paystack public key
+- **Home (overview)** — Portfolio carousel, quick stats, charts, active investments, recent transactions
+- **Portfolio** — Asset allocation chart + live market prices
+- **Assets** — Crypto/stocks/commodities price tracker
+- **Invest** — Browse and purchase investment packages
+- **Transactions** — Full transaction history
+- **Referrals** — Referral code, stats, tiered commission info
+- **Fund Wallet** — Paystack funding with EasyBuy channel guide
+- **Withdraw** — Bank withdrawal form with account resolution
+- **Notifications** — All notifications with mark-read
+- **Profile** — Personal info + profile picture upload
+- **Security** — Paystack security info + EasyBuy channel explanation
+
+## Features
+
+- Real-time dashboard polling (30s data, 10s notifications) — no page reload needed
+- Profile picture upload (base64, stored in MongoDB)
+- Notification bell dropdown with solid background, live updates
+- Transaction cancelled / failed messages via toast notifications
+- Custom refresh button (no full page reload)
+- Scrollable transaction card in overview
+- Security page explaining Paystack PCI DSS, SSL, 3DS, and EasyBuy channel
 
 ## Workflows
 
-- **Start application** — `npm run dev` (frontend, port 5000)
-- **Start Backend** — `node server/index.js` (backend, port 8000)
-
-## Development
-
-Frontend calls `/api/*` which is proxied by Vite to `http://localhost:8000`.
+- **Start application** — `npm run dev` (Next.js on port 5000)

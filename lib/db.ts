@@ -1,5 +1,12 @@
 import mongoose from 'mongoose';
 
+import '@/lib/models/User';
+import '@/lib/models/Package';
+import '@/lib/models/Investment';
+import '@/lib/models/Transaction';
+import '@/lib/models/Notification';
+import '@/lib/models/Trade';
+
 const MONGODB_URI = process.env.MONGODB_URI as string;
 
 interface MongooseCache {

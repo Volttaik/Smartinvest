@@ -7,15 +7,18 @@ export async function PUT(req: NextRequest) {
   try {
     const userId = verifyToken(req);
     await connectDB();
-    const { date_of_birth, gender, address, phone, bio, nin } = await req.json();
+    const { date_of_birth, gender, address, phone, bio, nin, profile_picture } = await req.json();
+
+    const updateData: any = {
+      date_of_birth, gender, address, phone, bio, nin,
+      profile_completed: true,
+      updated_at: new Date(),
+    };
+    if (profile_picture !== undefined) updateData.profile_picture = profile_picture;
 
     const user = await User.findByIdAndUpdate(
       userId,
-      {
-        date_of_birth, gender, address, phone, bio, nin,
-        profile_completed: true,
-        updated_at: new Date(),
-      },
+      updateData,
       { new: true }
     );
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });

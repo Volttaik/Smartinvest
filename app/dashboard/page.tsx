@@ -191,11 +191,13 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
   const allocation    = dashData?.allocation || [];
   const recent        = (dashData?.recentTransactions || []).slice(0, 4);
   const activeInvs    = (dashData?.activeInvestments || []).slice(0, 3);
+  const capitalBalance = parseFloat(dashData?.capital_balance || 0);
+  const totalBalance   = balance + capitalBalance;
 
   const cards = [
     {
       id: "portfolio",
-      label: "Portfolio Value",
+      label: "Total Balance",
       gradient: "from-zinc-900 via-zinc-800 to-zinc-900",
       accent: "bg-primary",
       content: (
@@ -208,12 +210,29 @@ function InvestmentCardCarousel({ dashData, user, balance, onFund, onInvest }: {
           </div>
           <div>
             <p className="text-white/40 text-xs mb-1">Total Balance</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white">₦{balance.toLocaleString()}</h2>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold">
-                +{roi}% ROI
-              </span>
-              <span className="text-white/30 text-xs">{activeCount} active</span>
+            <motion.h2
+              key={totalBalance}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-3xl sm:text-4xl font-bold text-white"
+            >
+              ₦{totalBalance.toLocaleString()}
+            </motion.h2>
+            <div className="flex items-center gap-2 mt-3">
+              <div className="flex flex-col">
+                <span className="text-white/40 text-[9px] uppercase tracking-wider">ROI Balance</span>
+                <span className="text-emerald-400 text-xs font-bold">₦{balance.toLocaleString()}</span>
+              </div>
+              <div className="w-px h-8 bg-white/15" />
+              <div className="flex flex-col">
+                <span className="text-white/40 text-[9px] uppercase tracking-wider">Capital Balance</span>
+                <span className="text-blue-300 text-xs font-bold">₦{capitalBalance.toLocaleString()}</span>
+              </div>
+              <div className="ml-auto">
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-semibold">
+                  {activeCount} active
+                </span>
+              </div>
             </div>
           </div>
           <div className="flex gap-2.5">
@@ -723,7 +742,9 @@ function MyAssetCard({ inv, usdRate }: { inv: any; usdRate: number }) {
   const asset = ASSET_MAP[assetKey] || ASSET_MAP["Starter"];
   const principal = parseFloat(inv.amount) || 0;
   const dailyReturnPct = parseFloat(inv.daily_return_pct) || 0;
-  const seed = inv.id ? parseInt(inv.id.slice(-4), 16) : 1;
+  const totalEarned = parseFloat(inv.total_earned) || 0;
+  const seed = inv._id ? parseInt(String(inv._id).slice(-4), 16) : 1;
+  const pct = Math.min(100, ((inv.days_completed || 0) / (inv.duration_days || 1)) * 100);
 
   const getNow = () => {
     const n = new Date();
@@ -731,6 +752,7 @@ function MyAssetCard({ inv, usdRate }: { inv: any; usdRate: number }) {
   };
   const [nowMin, setNowMin] = useState(getNow);
   const [hoveredPoint, setHoveredPoint] = useState<{ value: number; pnl: number; time: string } | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNowMin(getNow()), 60000);
@@ -743,59 +765,79 @@ function MyAssetCard({ inv, usdRate }: { inv: any; usdRate: number }) {
   const isProfit = latest.pnl >= 0;
   const usdValue = usdRate > 0 ? (principal * NGN_TO_USD) / usdRate : 0;
   const strokeColor = isProfit ? "#10b981" : "#ef4444";
+  const dailyTarget = principal * (dailyReturnPct / 100);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+    >
       {/* Header */}
-      <div className="p-4 flex items-center justify-between border-b border-gray-100">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${asset.bg}`}>
-            <span className={`text-[10px] font-bold ${asset.text}`}>{asset.symbol.replace("=F","")}</span>
-          </div>
-          <div>
-            <p className="text-sm font-bold text-gray-900">{asset.name}</p>
-            <p className="text-[11px] text-gray-400">{inv.package_name} · {asset.symbol.replace("=F","")}</p>
-          </div>
+      <div className="p-4 flex items-center gap-3">
+        <div className={`w-11 h-11 rounded-2xl border-2 flex items-center justify-center shrink-0 ${asset.bg}`}>
+          <span className={`text-xs font-black ${asset.text}`}>{asset.symbol.replace("=F","").slice(0,4)}</span>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] text-gray-400">Value in {asset.symbol.replace("=F","")}</p>
-          <p className="text-sm font-bold text-gray-900">
-            {usdValue > 0 ? `${usdValue.toFixed(usdValue < 0.001 ? 6 : usdValue < 1 ? 4 : 2)} ${asset.symbol.replace("=F","")}` : "—"}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <p className="text-sm font-bold text-foreground">{asset.name}</p>
+            <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${isProfit ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>
+              {isProfit ? "▲" : "▼"} {dailyReturnPct}%/day
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">{inv.package_name}</p>
+        </div>
+        <div className="text-right shrink-0">
+          <div className="flex items-center gap-1.5 justify-end">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] text-muted-foreground">Live</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            {usdValue > 0 ? `${usdValue.toFixed(usdValue < 0.001 ? 6 : usdValue < 1 ? 4 : 2)} ${asset.symbol.replace("=F","")}` : asset.symbol.replace("=F","")}
           </p>
         </div>
       </div>
 
-      {/* Live P&L display */}
-      <div className="px-4 pt-3 pb-0 flex items-end justify-between">
+      {/* P&L row */}
+      <div className="px-4 pb-2 flex items-center justify-between">
         <div>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider">Principal</p>
-          <p className="text-lg font-bold text-gray-900">₦{principal.toLocaleString()}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Capital</p>
+          <p className="text-base font-bold text-foreground">₦{principal.toLocaleString()}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Total Earned</p>
+          <p className="text-base font-bold text-emerald-600">+₦{totalEarned.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider">
-            {hoveredPoint ? `@ ${hoveredPoint.time}` : "Current P&L"}
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
+            {hoveredPoint ? `@ ${hoveredPoint.time}` : "Today P&L"}
           </p>
-          <p className={`text-lg font-bold ${displayed.pnl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+          <motion.p
+            key={displayed.pnl}
+            initial={{ opacity: 0.6, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`text-base font-bold ${displayed.pnl >= 0 ? "text-emerald-600" : "text-red-500"}`}
+          >
             {displayed.pnl >= 0 ? "+" : ""}₦{Math.abs(displayed.pnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-          </p>
+          </motion.p>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="px-1 pt-1 pb-0">
+      <div className="px-1">
         {(() => {
           const vals = chartData.map(d => d.value);
           const minV = Math.min(...vals);
           const maxV = Math.max(...vals);
           const range = maxV - minV || 1;
-          // Where does principal (zero P&L line) sit in the Y axis? (0=top, 1=bottom in SVG/gradient)
           const zeroFrac = Math.max(0, Math.min(1, (maxV - principal) / range));
-          const zeroOff  = `${(zeroFrac * 100).toFixed(1)}%`;
+          const zeroOff = `${(zeroFrac * 100).toFixed(1)}%`;
           return (
-            <ResponsiveContainer width="100%" height={120}>
+            <ResponsiveContainer width="100%" height={110}>
               <AreaChart
                 data={chartData}
-                margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                margin={{ top: 4, right: 2, left: 0, bottom: 0 }}
                 onMouseMove={(e: any) => {
                   if (e.activePayload && e.activePayload[0]) setHoveredPoint(e.activePayload[0].payload);
                 }}
@@ -803,24 +845,23 @@ function MyAssetCard({ inv, usdRate }: { inv: any; usdRate: number }) {
               >
                 <defs>
                   <linearGradient id={`grad-${seed}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"    stopColor="#10b981" stopOpacity={0.18} />
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.2} />
                     <stop offset={zeroOff} stopColor="#10b981" stopOpacity={0.04} />
                     <stop offset={zeroOff} stopColor="#ef4444" stopOpacity={0.04} />
-                    <stop offset="100%" stopColor="#ef4444"  stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="#ef4444" stopOpacity={0.2} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="2 4" stroke="#e5e7eb" strokeOpacity={0.8} />
-                <XAxis dataKey="time" tick={{ fontSize: 8, fill: "#9ca3af" }} tickLine={false} axisLine={false} interval={11} />
+                <XAxis dataKey="time" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} interval={15} />
                 <YAxis hide domain={["auto", "auto"]} />
-                <ReferenceLine y={principal} stroke="#d1d5db" strokeWidth={1} strokeDasharray="3 4" />
+                <ReferenceLine y={principal} stroke="hsl(var(--border))" strokeWidth={1} strokeDasharray="3 4" />
                 <Tooltip
-                  cursor={{ stroke: "#9ca3af", strokeWidth: 1, strokeDasharray: "3 3" }}
+                  cursor={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1, strokeDasharray: "3 3" }}
                   content={({ payload }) => {
                     if (!payload || !payload[0]) return null;
                     const d = payload[0].payload as { time: string; value: number; pnl: number };
                     return (
-                      <div className="bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 shadow-lg text-[11px]">
-                        <p className="text-gray-400">{d.time}</p>
+                      <div className="bg-background border border-border rounded-xl px-2.5 py-1.5 shadow-lg text-[11px]">
+                        <p className="text-muted-foreground">{d.time}</p>
                         <p className={`font-bold ${d.pnl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
                           {d.pnl >= 0 ? "+" : ""}₦{Math.abs(d.pnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </p>
@@ -832,11 +873,11 @@ function MyAssetCard({ inv, usdRate }: { inv: any; usdRate: number }) {
                   type="monotone"
                   dataKey="value"
                   stroke={strokeColor}
-                  strokeWidth={1}
+                  strokeWidth={1.5}
                   fill={`url(#grad-${seed})`}
                   dot={false}
                   activeDot={{ r: 3, fill: strokeColor, stroke: "#fff", strokeWidth: 1.5 }}
-                  animationDuration={700}
+                  animationDuration={800}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -844,17 +885,31 @@ function MyAssetCard({ inv, usdRate }: { inv: any; usdRate: number }) {
         })()}
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[11px] text-gray-500">Day {inv.days_completed}/{inv.duration_days}</span>
+      {/* Progress + footer */}
+      <div className="px-4 pb-4 pt-2 space-y-2">
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+          <span>Day {inv.days_completed || 0} of {inv.duration_days}</span>
+          <span>{pct.toFixed(0)}% complete</span>
         </div>
-        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${isProfit ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>
-          {isProfit ? "+" : ""}{dailyReturnPct}% daily target
-        </span>
+        <div className="h-1 bg-muted rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-primary rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+          />
+        </div>
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>Target: +₦{dailyTarget.toLocaleString(undefined, { maximumFractionDigits: 0 })}/day</span>
+          </div>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${isProfit ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
+            {isProfit ? "On Track" : "Recovering"}
+          </span>
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -882,6 +937,8 @@ function MyAssetsTab({ dashData }: { dashData: any }) {
 
   const totalPrincipal = investments.reduce((s, i) => s + parseFloat(i.amount || 0), 0);
   const totalDailyReturn = investments.reduce((s, i) => s + parseFloat(i.amount || 0) * (parseFloat(i.daily_return_pct || 0) / 100), 0);
+  const totalEarned = investments.reduce((s, i) => s + parseFloat(i.total_earned || 0), 0);
+  const avgReturn = investments.length > 0 ? investments.reduce((s, i) => s + parseFloat(i.daily_return_pct || 0), 0) / investments.length : 0;
 
   const getRate = (inv: any): number => {
     const assetKey = Object.keys(ASSET_MAP).find(k => inv.package_name?.toLowerCase().includes(k.toLowerCase())) || "Starter";
@@ -898,41 +955,69 @@ function MyAssetsTab({ dashData }: { dashData: any }) {
       initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.28 }} className="p-5 space-y-5">
 
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 text-white">
-        <p className="text-white/50 text-[10px] uppercase tracking-widest font-bold mb-1">Portfolio Trading View</p>
-        <h2 className="text-2xl font-bold font-display">My Assets</h2>
-        <p className="text-white/50 text-xs mt-1">Live 24h trading chart for each investment</p>
-        <div className="flex gap-4 mt-4">
-          <div>
-            <p className="text-white/40 text-[10px] uppercase tracking-wider">Total Invested</p>
-            <p className="text-lg font-bold">₦{totalPrincipal.toLocaleString()}</p>
+      <div className="bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-3xl p-6 text-white overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold">Live Trading View</p>
           </div>
-          <div>
-            <p className="text-white/40 text-[10px] uppercase tracking-wider">Expected Today</p>
-            <p className="text-lg font-bold text-emerald-400">+₦{totalDailyReturn.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+          <h2 className="text-2xl font-bold font-display mb-1">My Assets</h2>
+          <p className="text-white/50 text-xs">Real-time intraday simulation — {investments.length} active position{investments.length !== 1 ? 's' : ''}</p>
+          <div className="grid grid-cols-3 gap-3 mt-5">
+            <div className="p-3 rounded-2xl bg-white/8 border border-white/10">
+              <p className="text-white/40 text-[9px] uppercase tracking-wider">Capital</p>
+              <p className="text-white font-bold text-sm mt-0.5">₦{totalPrincipal.toLocaleString()}</p>
+            </div>
+            <div className="p-3 rounded-2xl bg-white/8 border border-white/10">
+              <p className="text-white/40 text-[9px] uppercase tracking-wider">Total Earned</p>
+              <p className="text-emerald-400 font-bold text-sm mt-0.5">+₦{totalEarned.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+            </div>
+            <div className="p-3 rounded-2xl bg-white/8 border border-white/10">
+              <p className="text-white/40 text-[9px] uppercase tracking-wider">Today Target</p>
+              <p className="text-blue-300 font-bold text-sm mt-0.5">+₦{totalDailyReturn.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+            </div>
           </div>
         </div>
       </div>
 
       {investments.length === 0 ? (
-        <div className="py-16 text-center">
-          <LineChart className="w-12 h-12 mx-auto mb-3 text-gray-200" />
-          <p className="text-sm font-semibold text-gray-500">No active investments</p>
-          <p className="text-xs text-gray-400 mt-1">Start investing to see your live asset charts here</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="py-16 text-center bg-card border border-border rounded-2xl"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+            <LineChart className="w-8 h-8 text-muted-foreground/30" />
+          </div>
+          <p className="text-sm font-semibold text-foreground">No active investments</p>
+          <p className="text-xs text-muted-foreground mt-1">Start investing to see your live asset charts here</p>
+        </motion.div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {investments.map((inv: any) => (
-            <MyAssetCard key={inv.id} inv={inv} usdRate={getRate(inv)} />
+          {investments.map((inv: any, i: number) => (
+            <motion.div
+              key={inv._id || i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.06, duration: 0.3 }}
+            >
+              <MyAssetCard inv={inv} usdRate={getRate(inv)} />
+            </motion.div>
           ))}
         </div>
       )}
 
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
-        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-        <p className="text-xs text-amber-700">
-          Charts reflect live intraday trading activity. Your confirmed daily return of {investments[0]?.daily_return_pct || "—"}% is credited at end of each trading day. Any surplus above target is retained; any shortfall is recovered in subsequent trades.
-        </p>
+      <div className="bg-card border border-border rounded-2xl p-4 flex gap-3">
+        <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+          <AlertCircle className="w-4 h-4 text-amber-600" />
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-foreground mb-0.5">About these charts</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Charts simulate live intraday trading activity using your investment parameters. Your confirmed daily return ({avgReturn.toFixed(1)}% avg) is credited at end of each trading day. Surplus above target is retained; any shortfall is recovered in subsequent trades.
+          </p>
+        </div>
       </div>
     </motion.div>
   );
@@ -1136,6 +1221,7 @@ export default function Dashboard() {
   const [withdrawForm, setWithdrawForm] = useState({
     amount: "", accountName: "", accountNumber: "", bankCode: "", bankName: ""
   });
+  const [withdrawIncludeCapital, setWithdrawIncludeCapital] = useState(false);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [referralCopied, setReferralCopied] = useState(false);
@@ -1375,12 +1461,13 @@ export default function Dashboard() {
     try {
       const res = await fetch('/api/wallet/withdraw', {
         method: 'POST', headers: authHeaders(),
-        body: JSON.stringify({ ...withdrawForm, amount: parseFloat(withdrawForm.amount) })
+        body: JSON.stringify({ ...withdrawForm, amount: parseFloat(withdrawForm.amount), include_capital: withdrawIncludeCapital })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       showNotif("success", "Withdrawal request submitted! You'll be notified once processed.");
       setWithdrawForm({ amount: "", accountName: "", accountNumber: "", bankCode: "", bankName: "" });
+      setWithdrawIncludeCapital(false);
       await loadDashboard(); await refreshUser();
       fetch('/api/notifications', { headers: authHeaders() })
         .then(r => r.json()).then(d => { if (Array.isArray(d)) setNotifications(d); }).catch(() => {});
@@ -1398,6 +1485,8 @@ export default function Dashboard() {
   };
 
   const balance = parseFloat(String(dashData?.balance ?? user?.balance ?? 0));
+  const capitalBalance = parseFloat(String(dashData?.capital_balance ?? 0));
+  const totalPortfolioBalance = balance + capitalBalance;
   const tiers = ["All", ...Array.from(new Set(packages.map((p: any) => p.tier)))];
   const filteredPkgs = tierFilter === "All" ? packages : packages.filter((p: any) => p.tier === tierFilter);
 
@@ -1546,7 +1635,7 @@ export default function Dashboard() {
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-xs font-semibold text-emerald-700">
-                ₦{parseFloat(String(user?.balance || 0)).toLocaleString()}
+                ₦{totalPortfolioBalance.toLocaleString()}
               </span>
             </div>
             <button onClick={() => setActiveTab("fund")}
@@ -1612,7 +1701,7 @@ export default function Dashboard() {
                   {/* Quick stats */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {[
-                      { label: "Balance",   value: `₦${balance.toLocaleString()}`,                                                 icon: Wallet,     sub: "available",    accent: "from-primary/10 to-primary/5",     iconBg: "bg-primary/15",     iconColor: "text-primary" },
+                      { label: "Total Balance", value: `₦${totalPortfolioBalance.toLocaleString()}`,                               icon: Wallet,     sub: `ROI: ₦${balance.toLocaleString()} · Capital: ₦${capitalBalance.toLocaleString()}`,    accent: "from-primary/10 to-primary/5",     iconBg: "bg-primary/15",     iconColor: "text-primary" },
                       { label: "Invested",  value: `₦${parseFloat(dashData?.investments?.total_invested || 0).toLocaleString()}`,  icon: TrendingUp,  sub: `${dashData?.investments?.active_count || 0} active`,  accent: "from-blue-50 to-blue-50/30",       iconBg: "bg-blue-100",       iconColor: "text-blue-600" },
                       { label: "Earned",    value: `₦${parseFloat(dashData?.investments?.total_earned || 0).toLocaleString()}`,    icon: DollarSign,  sub: "total returns", accent: "from-emerald-50 to-emerald-50/30", iconBg: "bg-emerald-100",    iconColor: "text-emerald-600" },
                       { label: "Referrals", value: String(dashData?.referrals?.referred_users || 0),                               icon: Zap,         sub: `₦${parseFloat(dashData?.referrals?.earnings || 0).toLocaleString()} earned`, accent: "from-amber-50 to-amber-50/30", iconBg: "bg-amber-100", iconColor: "text-amber-600" },
@@ -2083,10 +2172,13 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   transition={{ duration: 0.28 }} className="p-5 space-y-5">
 
-                  <div className="bg-gradient-to-br from-foreground to-foreground/90 rounded-3xl p-6 text-white">
-                    <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold mb-2">Current Balance</p>
-                    <h2 className="text-4xl font-bold font-display">₦{balance.toLocaleString()}</h2>
+                  <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-3xl p-6 text-white">
+                    <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold mb-2">Fund Account</p>
+                    <h2 className="text-4xl font-bold font-display">₦{totalPortfolioBalance.toLocaleString()}</h2>
                     <p className="text-white/50 text-sm mt-1">Add funds to start or increase investments</p>
+                    <div className="mt-3">
+                      <span className="px-2.5 py-1 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-semibold">₦100 Paystack processing fee applies</span>
+                    </div>
                   </div>
 
                   <div className="bg-card border border-border rounded-2xl p-5 space-y-5">
@@ -2125,9 +2217,15 @@ export default function Dashboard() {
                       {fundAmount && parseFloat(fundAmount) >= 100 && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
-                          Adding <strong>₦{parseFloat(fundAmount).toLocaleString()}</strong> →
-                          New balance: <strong>₦{(balance + parseFloat(fundAmount)).toLocaleString()}</strong>
+                          className="space-y-2">
+                          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
+                            <div>Crediting <strong>₦{parseFloat(fundAmount).toLocaleString()}</strong> to wallet</div>
+                            <div className="mt-0.5 text-emerald-600">New balance: <strong>₦{(totalPortfolioBalance + parseFloat(fundAmount)).toLocaleString()}</strong></div>
+                          </div>
+                          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-700 flex items-start gap-1.5">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                            <span>A ₦100 Paystack processing fee will be charged. Total debit from your bank: <strong>₦{(parseFloat(fundAmount) + 100).toLocaleString()}</strong></span>
+                          </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -2202,16 +2300,58 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   transition={{ duration: 0.28 }} className="p-5 space-y-5">
 
-                  <div className="bg-gradient-to-br from-foreground to-foreground/90 rounded-3xl p-6 text-white">
-                    <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold mb-2">Available Balance</p>
-                    <h2 className="text-4xl font-bold font-display">₦{balance.toLocaleString()}</h2>
-                    <p className="text-white/50 text-sm mt-1">Withdraw to your Nigerian bank account</p>
+                  <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-3xl p-6 text-white">
+                    <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold mb-2">Withdraw Funds</p>
+                    <h2 className="text-4xl font-bold font-display">₦{totalPortfolioBalance.toLocaleString()}</h2>
+                    <p className="text-white/40 text-xs mt-0.5">Total portfolio balance</p>
+                    <div className="flex gap-4 mt-4">
+                      <div>
+                        <p className="text-white/40 text-[10px] uppercase tracking-wider">ROI Balance</p>
+                        <p className="text-emerald-400 font-bold text-sm">₦{balance.toLocaleString()}</p>
+                      </div>
+                      <div className="w-px bg-white/10" />
+                      <div>
+                        <p className="text-white/40 text-[10px] uppercase tracking-wider">Capital Balance</p>
+                        <p className="text-blue-300 font-bold text-sm">₦{capitalBalance.toLocaleString()}</p>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
                     <div>
                       <h3 className="font-semibold text-base">Withdraw Funds</h3>
                       <p className="text-sm text-muted-foreground mt-0.5">Processed within 1–3 business days</p>
+                    </div>
+
+                    {/* Capital toggle */}
+                    <div className="p-4 rounded-2xl border border-border bg-muted/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0 mr-3">
+                          <p className="text-sm font-semibold text-foreground">Include Capital</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                            Allow withdrawal to draw from your invested capital. This reduces your active investment amount and lowers future daily returns.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setWithdrawIncludeCapital(v => !v)}
+                          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none
+                            ${withdrawIncludeCapital ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                        >
+                          <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-md transform transition-transform duration-200
+                            ${withdrawIncludeCapital ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                        </button>
+                      </div>
+                      <AnimatePresence>
+                        {withdrawIncludeCapital && (
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                            className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                            <p className="text-xs text-amber-800 flex items-start gap-1.5">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                              <span>Capital included — withdrawing beyond your ROI balance will reduce your investment principal and lower your daily earnings accordingly.</span>
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
                     {/* Amount */}
@@ -2280,17 +2420,31 @@ export default function Dashboard() {
                     <AnimatePresence>
                       {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className={`p-3 rounded-xl text-xs border ${
-                            parseFloat(withdrawForm.amount) > balance || parseFloat(withdrawForm.amount) < 5000
-                              ? 'bg-red-50 border-red-200 text-red-700'
-                              : 'bg-blue-50 border-blue-200 text-blue-700'
-                          }`}>
-                          {parseFloat(withdrawForm.amount) > balance
-                            ? 'Amount exceeds your available balance'
-                            : parseFloat(withdrawForm.amount) < 5000
-                              ? 'Minimum withdrawal amount is ₦5,000'
-                              : `Withdrawing ₦${parseFloat(withdrawForm.amount).toLocaleString()} · Remaining: ₦${(balance - parseFloat(withdrawForm.amount)).toLocaleString()}`}
+                          exit={{ opacity: 0, height: 0 }}>
+                          {(() => {
+                            const amt = parseFloat(withdrawForm.amount);
+                            const maxAvail = withdrawIncludeCapital ? totalPortfolioBalance : balance;
+                            if (amt < 5000) return (
+                              <div className="p-3 rounded-xl text-xs border bg-red-50 border-red-200 text-red-700">
+                                Minimum withdrawal amount is ₦5,000
+                              </div>
+                            );
+                            if (amt > maxAvail) return (
+                              <div className="p-3 rounded-xl text-xs border bg-red-50 border-red-200 text-red-700">
+                                Amount exceeds your {withdrawIncludeCapital ? 'total portfolio' : 'available ROI'} balance
+                              </div>
+                            );
+                            const fromCapital = withdrawIncludeCapital && amt > balance ? amt - balance : 0;
+                            return (
+                              <div className="p-3 rounded-xl text-xs border bg-blue-50 border-blue-200 text-blue-700 space-y-1">
+                                <div>Withdrawing <strong>₦{amt.toLocaleString()}</strong></div>
+                                {fromCapital > 0 && (
+                                  <div className="text-amber-700">→ ₦{balance.toLocaleString()} from ROI + ₦{fromCapital.toLocaleString()} from capital</div>
+                                )}
+                                <div>Remaining balance: <strong>₦{Math.max(0, (withdrawIncludeCapital ? totalPortfolioBalance : balance) - amt).toLocaleString()}</strong></div>
+                              </div>
+                            );
+                          })()}
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -2298,7 +2452,8 @@ export default function Dashboard() {
                     <Button onClick={handleWithdraw}
                       disabled={withdrawLoading || !withdrawForm.amount || !withdrawForm.accountName
                         || !withdrawForm.accountNumber || !withdrawForm.bankCode
-                        || parseFloat(withdrawForm.amount) > balance || parseFloat(withdrawForm.amount) < 5000}
+                        || parseFloat(withdrawForm.amount) > (withdrawIncludeCapital ? totalPortfolioBalance : balance)
+                        || parseFloat(withdrawForm.amount) < 5000}
                       className="w-full h-12 bg-primary text-white rounded-xl font-semibold hover:brightness-110 transition-all">
                       {withdrawLoading
                         ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Submitting Request…</span>

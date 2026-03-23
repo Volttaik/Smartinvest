@@ -2,6 +2,14 @@
 
 A full-stack Next.js investment platform with MongoDB, Paystack payments, and a comprehensive user dashboard.
 
+## Design System
+
+- **Font:** DM Serif Display (display headings) + Inter (body text) via Google Fonts
+- **Colors:** Red primary (`hsl(0 84% 42%)`), cool dark foreground (`220 13% 9%`), clean whites and muted grays
+- **Design philosophy:** No glow effects, no neon — clean typography hierarchy, subtle dot-grid backgrounds, consistent border/shadow language, tasteful transitions
+- **CSS utilities:** `.font-display`, `.red-gradient`, `.bg-dot-grid`, `.bg-line-grid`, `.card-hover`, `.scrollbar-thin`, `.section-padding`
+- **Animations:** Framer Motion throughout — staggered children, viewport-triggered whileInView, smooth page transitions
+
 ## Architecture
 
 - **Framework:** Next.js 14 (App Router, TypeScript)

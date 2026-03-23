@@ -7,80 +7,81 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import Link from "next/link";
 
 const faqs = [
   {
-    q: "How much money do I need to start investing with Nexios?",
-    a: "You can open an account for free with no minimum. Our paid plans start managing portfolios from ₦1,000. The Growth plan supports up to ₦250,000, while Elite has no upper limit.",
+    q: "How much money do I need to start investing with SmartInvest?",
+    a: "You can open an account for free. Investment packages start from as low as ₦5,000. Simply fund your wallet via Paystack and choose a package that fits your budget.",
   },
   {
-    q: "Is my money safe with Nexios Capital?",
-    a: "Absolutely. Your assets are held in segregated accounts protected by SIPC insurance up to ₦500,000. We use bank-level 256-bit encryption and are SEC-registered. We never lend or use client funds for our own operations.",
+    q: "Is my money safe with SmartInvest?",
+    a: "All transactions are processed and secured via Paystack — Nigeria's leading payment infrastructure. Your wallet balance is stored securely and withdrawals require account verification.",
   },
   {
-    q: "How does Nexios outperform the S&P 500?",
-    a: "Our quantitative models analyze thousands of data points in real-time — macro trends, sector rotations, earnings signals, and risk metrics. Combined with daily rebalancing and tax-loss harvesting, we consistently find alpha the market misses.",
+    q: "How are daily returns credited?",
+    a: "Returns are calculated based on your chosen package's daily return percentage and credited to your wallet balance automatically each day. You can track all credits in your transaction history.",
   },
   {
     q: "Can I withdraw my money at any time?",
-    a: "Yes. There are no lock-up periods or early withdrawal penalties. You can initiate a withdrawal at any time and funds typically settle within 1–3 business days depending on asset type.",
+    a: "Yes. There are no lock-up periods. You can withdraw your ROI balance at any time (minimum ₦5,000). Capital withdrawal is also available with the 'Include Capital' option enabled.",
   },
   {
-    q: "Do I need investment experience to use Nexios?",
-    a: "Not at all. Nexios is designed for investors at every level. Our onboarding questionnaire determines your risk tolerance and goals, and our AI builds and manages your portfolio automatically. You don't need to make any trading decisions.",
+    q: "What is the referral program?",
+    a: "Earn commission for every investor you refer. When someone signs up with your referral code and starts investing, you earn a percentage of their investment as commission — credited directly to your wallet.",
   },
   {
-    q: "What fees does Nexios charge?",
-    a: "We charge a flat monthly subscription fee — no percentage of AUM, no trading commissions, no hidden fees. The Starter plan is completely free. Growth is ₦29/month (or ₦24 billed annually) and Elite is ₦99/month.",
+    q: "How long does a withdrawal take?",
+    a: "Withdrawal requests are reviewed and processed within 1–3 business days. You'll receive a notification once your transfer has been completed.",
   },
 ];
 
 export default function FAQ() {
   return (
-    <section className="py-28 bg-background">
+    <section className="py-28 bg-muted/20 border-t border-border">
       <div className="container mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-start">
           {/* Left */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -18 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.55 }}
             className="lg:sticky lg:top-28"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background border border-border text-xs text-muted-foreground font-medium uppercase tracking-wider mb-7">
               FAQ
             </div>
-            <h2 className="font-display text-4xl md:text-5xl font-bold mb-5 text-foreground leading-tight">
+            <h2 className="font-display text-4xl md:text-5xl font-bold mb-5 text-foreground leading-tight tracking-tight">
               Frequently Asked<br />
-              <span className="red-gradient">Questions</span>
+              <span className="red-gradient italic">Questions</span>
             </h2>
-            <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-              Everything you need to know before getting started. Still have questions?
+            <p className="text-muted-foreground text-base leading-relaxed mb-8 max-w-sm">
+              Everything you need to know before getting started. Still have a question?
             </p>
-            <a
-              href="mailto:support@nexios.com"
-              className="text-sm text-primary font-semibold hover:underline inline-flex items-center gap-1.5"
+            <Link
+              href="/support"
+              className="text-sm text-foreground font-medium hover:text-primary transition-colors inline-flex items-center gap-1.5 border border-border px-4 py-2 rounded-xl hover:border-primary/30"
             >
-              Contact our team →
-            </a>
+              Visit Support →
+            </Link>
           </motion.div>
 
           {/* Right — Accordion */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 18 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.55 }}
           >
-            <Accordion type="single" collapsible className="space-y-3">
+            <Accordion type="single" collapsible className="space-y-2.5">
               {faqs.map(({ q, a }, i) => (
                 <AccordionItem
                   key={i}
                   value={`item-${i}`}
-                  className="border border-border rounded-xl px-5 data-[state=open]:border-primary/30 transition-colors"
+                  className="border border-border rounded-xl px-5 bg-background data-[state=open]:border-foreground/20 transition-colors"
                 >
-                  <AccordionTrigger className="text-sm font-semibold text-foreground text-left py-4 hover:no-underline hover:text-primary transition-colors">
+                  <AccordionTrigger className="text-sm font-medium text-foreground text-left py-4 hover:no-underline">
                     {q}
                   </AccordionTrigger>
                   <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-5">

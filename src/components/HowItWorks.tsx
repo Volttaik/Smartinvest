@@ -10,56 +10,55 @@ const steps = [
     number: "01",
     icon: UserPlus,
     title: "Create Your Account",
-    desc: "Sign up in under 2 minutes. No paperwork, no minimums to get started. Just your email and a goal.",
+    desc: "Sign up in under 2 minutes. No paperwork, no minimum to get started — just your email and a goal.",
     detail: "Free forever · No credit card required",
   },
   {
     number: "02",
     icon: SlidersHorizontal,
-    title: "Set Your Strategy",
-    desc: "Tell us your risk tolerance, timeline, and financial goals. Our algorithm builds a custom portfolio for you.",
-    detail: "AI-powered · Fully personalized",
+    title: "Choose a Package",
+    desc: "Browse 30 investment packages across 6 tiers. Pick your budget, your duration, and your target daily return.",
+    detail: "From ₦5,000 · Daily returns",
   },
   {
     number: "03",
     icon: Rocket,
-    title: "Watch It Grow",
-    desc: "We handle rebalancing, reinvesting, and optimization automatically. Track everything in real-time from your dashboard.",
-    detail: "Hands-off · Always optimized",
+    title: "Earn Daily Returns",
+    desc: "Returns are credited to your wallet automatically every day. Withdraw anytime or reinvest to compound your gains.",
+    detail: "Auto-credited · Withdraw anytime",
   },
 ];
 
 export default function HowItWorks() {
   return (
-    <section id="about" className="py-28 bg-background relative overflow-hidden">
-      {/* Subtle background accent */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-border" />
+    <section id="about" className="py-28 bg-background border-t border-border relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-primary/3 blur-3xl" />
+        <div className="absolute right-0 bottom-0 w-[400px] h-[400px] rounded-full bg-primary/3 blur-[80px]" />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-20 items-center">
+        <div className="grid lg:grid-cols-2 gap-20 items-start">
+
           {/* Left */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.55 }}
+            className="lg:sticky lg:top-32"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted border border-border text-xs text-muted-foreground font-medium uppercase tracking-wider mb-7">
               How It Works
             </div>
-            <h2 className="font-display text-4xl md:text-5xl font-bold mb-6 text-foreground leading-tight">
-              Investing Made<br />
-              <span className="red-gradient">Simple & Smart</span>
+            <h2 className="font-display text-4xl md:text-5xl font-bold mb-5 text-foreground leading-tight tracking-tight">
+              Three steps to<br /><span className="red-gradient italic">daily earnings</span>
             </h2>
-            <p className="text-muted-foreground text-lg leading-relaxed mb-10">
-              Three steps is all it takes. No financial jargon, no hidden complexity — just a clear path to building lasting wealth.
+            <p className="text-muted-foreground text-base leading-relaxed mb-10 max-w-sm">
+              No financial jargon. No complexity. Just a clear path to building wealth — one day at a time.
             </p>
             <Button
               size="lg"
-              className="bg-primary text-primary-foreground font-semibold px-8 rounded-xl hover:brightness-110"
+              className="bg-primary text-white font-semibold px-7 h-11 text-sm rounded-xl hover:bg-primary/90 transition-colors"
               asChild
             >
               <Link href="/register">Get Started Free</Link>
@@ -67,42 +66,35 @@ export default function HowItWorks() {
           </motion.div>
 
           {/* Right — Steps */}
-          <div className="space-y-0">
+          <div className="space-y-0 pt-2">
             {steps.map(({ number, icon: Icon, title, desc, detail }, i) => (
               <motion.div
                 key={title}
-                initial={{ opacity: 0, x: 30 }}
+                initial={{ opacity: 0, x: 24 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.12, duration: 0.5 }}
+                transition={{ delay: i * 0.1, duration: 0.5 }}
                 className="relative flex gap-6 group"
               >
                 {/* Connector line */}
                 {i < steps.length - 1 && (
-                  <motion.div
-                    initial={{ scaleY: 0 }}
-                    whileInView={{ scaleY: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.12 + 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                    style={{ transformOrigin: "top" }}
-                    className="absolute left-[22px] top-14 w-px h-full bg-border"
-                  />
+                  <div className="absolute left-5 top-12 w-px h-full bg-border" />
                 )}
 
-                {/* Step circle */}
-                <div className="flex-shrink-0 relative z-10">
-                  <div className="w-11 h-11 rounded-full border-2 border-border bg-background flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all duration-300">
-                    <Icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                {/* Step icon */}
+                <div className="flex-shrink-0 relative z-10 mt-0.5">
+                  <div className="w-10 h-10 rounded-2xl border border-border bg-background flex items-center justify-center group-hover:border-primary/40 group-hover:bg-primary/4 transition-all duration-300 shadow-sm">
+                    <Icon className="w-4.5 h-4.5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                 </div>
 
                 {/* Content */}
-                <div className="pb-10">
-                  <div className="text-xs font-bold text-primary tracking-widest uppercase mb-1">{number}</div>
-                  <h3 className="font-semibold text-lg text-foreground mb-2">{title}</h3>
+                <div className="pb-12">
+                  <div className="text-[10px] font-bold text-primary tracking-widest uppercase mb-1.5">{number}</div>
+                  <h3 className="font-semibold text-base text-foreground mb-2 leading-snug">{title}</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed mb-3">{desc}</p>
-                  <span className="inline-flex items-center gap-1.5 text-xs text-primary font-medium bg-primary/8 border border-primary/20 px-3 py-1 rounded-full">
-                    ✓ {detail}
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-medium bg-muted border border-border px-3 py-1 rounded-full">
+                    {detail}
                   </span>
                 </div>
               </motion.div>

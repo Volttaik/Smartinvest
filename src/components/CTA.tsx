@@ -2,63 +2,71 @@
 
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-const perks = ["No hidden fees", "Start from ₦1,000", "Dedicated advisor", "Cancel anytime"];
+const perks = [
+  "Free to open",
+  "Starts from ₦5,000",
+  "Daily returns",
+  "Withdraw anytime",
+];
 
 export default function CTA() {
   return (
-    <section id="contact" className="py-28 bg-background">
+    <section className="py-20 bg-background border-t border-border">
       <div className="container mx-auto px-6">
-        <motion.div initial={{ opacity: 0, y: 40, scale: 0.98 }} whileInView={{ opacity: 1, y: 0, scale: 1 }}
-          viewport={{ once: true }} transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-          className="relative overflow-hidden rounded-3xl bg-foreground text-primary-foreground p-12 md:p-20">
-          <motion.div animate={{ scale: [1, 1.08, 1], opacity: [0.1, 0.15, 0.1] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-primary/10 translate-x-1/3 -translate-y-1/3 pointer-events-none" />
-          <motion.div animate={{ scale: [1, 1.12, 1], opacity: [0.05, 0.1, 0.05] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-            className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-primary/5 -translate-x-1/3 translate-y-1/3 pointer-events-none" />
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="relative overflow-hidden rounded-3xl bg-foreground text-white p-12 md:p-20"
+        >
+          {/* Subtle background texture */}
+          <div className="absolute inset-0 bg-dot-grid opacity-[0.06]" />
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full bg-primary/10 translate-x-1/2 -translate-y-1/2 blur-[80px]" />
 
           <div className="relative z-10 max-w-2xl mx-auto text-center">
-            <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-semibold uppercase tracking-widest mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/8 border border-white/15 text-white/70 text-xs font-medium uppercase tracking-wider mb-8">
               Start Today
-            </motion.div>
+            </div>
 
-            <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-              transition={{ delay: 0.15 }} className="font-display text-4xl md:text-6xl font-bold mb-6">
-              Your Wealth Journey <span className="text-primary">Starts Now</span>
-            </motion.h2>
+            <h2 className="font-display text-4xl md:text-5xl font-bold mb-5 leading-tight tracking-tight">
+              Your Wealth Journey<br />
+              <span className="text-primary">Starts Now</span>
+            </h2>
 
-            <motion.p initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-              transition={{ delay: 0.2 }} className="text-white/60 text-lg max-w-lg mx-auto mb-10">
-              Join 50,000+ investors who trust Smart Invest to grow and protect their wealth with institutional-grade strategies.
-            </motion.p>
+            <p className="text-white/55 text-base max-w-md mx-auto mb-8 leading-relaxed">
+              Join thousands of investors growing their wealth with SmartInvest — simple, transparent, and daily returns.
+            </p>
 
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
-              transition={{ delay: 0.25 }} className="flex flex-wrap justify-center gap-6 mb-10">
-              {perks.map((perk, i) => (
-                <motion.div key={perk} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }} transition={{ delay: 0.28 + i * 0.06 }}
-                  className="flex items-center gap-2 text-sm text-white/70">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
+            <div className="flex flex-wrap justify-center gap-4 mb-10">
+              {perks.map((perk) => (
+                <div key={perk} className="flex items-center gap-2 text-sm text-white/55">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   {perk}
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
 
-            <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-              transition={{ delay: 0.35 }} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button size="lg" className="bg-primary text-primary-foreground font-semibold px-10 py-6 text-base rounded-xl hover:brightness-110 transition-all" asChild>
-                <Link href="/register">Open Free Account <ArrowRight className="ml-2 w-5 h-5" /></Link>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button
+                size="lg"
+                className="bg-primary text-white font-semibold px-8 h-12 text-sm rounded-xl hover:bg-primary/90 transition-colors"
+                asChild
+              >
+                <Link href="/register">Open Free Account <ArrowRight className="ml-2 w-4 h-4" /></Link>
               </Button>
-              <Button variant="ghost" size="lg" className="text-white border border-white/20 px-8 py-6 text-base rounded-xl hover:bg-white/10">
-                Schedule a Call
+              <Button
+                variant="ghost"
+                size="lg"
+                className="text-white/70 border border-white/15 px-8 h-12 text-sm rounded-xl hover:bg-white/8 hover:text-white transition-colors"
+                asChild
+              >
+                <Link href="/login">Sign In</Link>
               </Button>
-            </motion.div>
+            </div>
           </div>
         </motion.div>
       </div>

@@ -1,51 +1,75 @@
 # SmartInvest
 
-## Overview
+A Next.js 14 investment platform with JWT authentication, a responsive investment dashboard, Paystack wallet payments, and a Turso/libSQL database.
 
-SmartInvest is a Next.js 14 App Router investment platform with a responsive landing page, authenticated dashboard, JWT sessions, Paystack wallet flows, and Turso/libSQL persistence.
+## Stack
 
-## Architecture
+- **Frontend:** Next.js 14 App Router, React 18, TypeScript, Tailwind CSS, Framer Motion, Recharts, Radix UI
+- **Auth:** JWT via `jsonwebtoken`, passwords hashed with `bcryptjs`
+- **Database:** Turso/libSQL via `@libsql/client`
+- **Payments:** Paystack (wallet funding + bank withdrawals)
+- **Theme:** `next-themes` (dark mode default, togglable via Settings)
 
-- **Framework:** Next.js 14 with TypeScript and the App Router
-- **UI:** React, Tailwind CSS, Framer Motion, Recharts, and Radix UI
-- **Server:** Next.js Route Handlers in `app/api/`
-- **Database:** Turso/libSQL through `@libsql/client`
-- **Authentication:** JWT and bcryptjs
-- **Payments:** Paystack (optional)
-- **Run command:** `npm run dev` on port 5000
+## Running locally
 
-## Required environment
+```bash
+npm install
+npm run dev   # serves on port 5000
+```
 
-Set these as Replit Secrets:
+### Required environment variables
 
-- `TURSO_DATABASE_URL`
-- `TURSO_AUTH_TOKEN`
-- `JWT_SECRET`
-- `INIT_SECRET`
-- `CRON_SECRET`
+| Variable | Purpose |
+|---|---|
+| `TURSO_DATABASE_URL` | libsql://your-database.turso.io |
+| `TURSO_AUTH_TOKEN` | Turso auth token |
+| `JWT_SECRET` | Long random string for signing JWTs |
+| `INIT_SECRET` | Secret to protect the /api/init-db route |
+| `CRON_SECRET` | Secret to protect the /api/cron route |
+| `SESSION_SECRET` | Session encryption secret |
+| `PAYSTACK_SECRET_KEY` | (Optional) Paystack secret — payment flows only |
+| `PAYSTACK_PUBLIC_KEY` | (Optional) Paystack public key — payment flows only |
+| `FRONTEND_URL` | (Optional) Production callback URL for Paystack |
 
-Optional payment configuration:
+### Initialize database
 
-- `PAYSTACK_SECRET_KEY`
-- `PAYSTACK_PUBLIC_KEY`
-- `FRONTEND_URL`
+```bash
+npm run init-db
+```
 
-The old MongoDB configuration is no longer used.
+## Project structure
 
-## Database
+```
+app/
+  page.tsx               Landing page
+  dashboard/page.tsx     Authenticated dashboard (all tabs)
+  login/ register/       Auth pages
+  api/                   Next.js Route Handlers
+  providers.tsx          AuthProvider + ThemeProvider
+  globals.css            Design tokens (light + dark CSS vars)
+components/              Landing page sections
+src/components/          Shared UI components
+lib/
+  db.ts                  Turso client + schema
+  models/                DB model accessors
+  server-auth.ts         JWT helpers
+scripts/
+  init-db.js             Schema init + package seeding
+```
 
-`lib/db.ts` creates the Turso/libSQL client, ensures the application tables exist, and provides the model access layer used by the route handlers. Run `npm run init-db` to explicitly initialize the schema and seed investment packages.
+## Dashboard features
 
-## Important directories
-
-- `app/`: pages, layout, auth provider, and API route handlers
-- `components/`: shared UI components
-- `lib/models/`: Turso-backed model accessors
-- `scripts/init-db.js`: schema initialization and package seeding
-- `public/`: static assets
+- **Dark mode by default** — togglable via Settings tab or sun/moon button in header
+- **Bottom navigation** — fixed mobile nav (Home, Portfolio, Invest, Wallet, Settings)
+- **Settings tab** — appearance (Light/Dark/System), account quick-links
+- Swipeable investment card carousel
+- Live intraday asset charts (My Assets tab)
+- P&L chart, earnings history, active investments
+- Paystack wallet funding + bank withdrawal
+- Referral program with tiered commissions
+- Notifications, Profile, Security tabs
 
 ## User preferences
 
-- Keep the existing Next.js structure and visual design.
-- Avoid introducing a separate frontend or backend server.
-- Keep database credentials in Replit Secrets and never expose them to client code.
+- UI-only changes preferred — do not alter architecture, database schema, or API routes without explicit instruction
+- Dark mode is the default theme

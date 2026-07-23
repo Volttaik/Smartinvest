@@ -48,11 +48,60 @@
     --font-display: 'DM Serif Display', Georgia, serif;
 
     --shadow-color: 220 13% 9%;
+    --shadow-2xs: 0 1px 2px 0 hsl(var(--shadow-color) / 0.04);
     --shadow-xs: 0 1px 2px 0 hsl(var(--shadow-color) / 0.05);
     --shadow-sm: 0 1px 3px 0 hsl(var(--shadow-color) / 0.07), 0 1px 2px -1px hsl(var(--shadow-color) / 0.07);
     --shadow-md: 0 4px 6px -1px hsl(var(--shadow-color) / 0.07), 0 2px 4px -2px hsl(var(--shadow-color) / 0.07);
     --shadow-lg: 0 10px 15px -3px hsl(var(--shadow-color) / 0.08), 0 4px 6px -4px hsl(var(--shadow-color) / 0.06);
     --shadow-xl: 0 20px 25px -5px hsl(var(--shadow-color) / 0.08), 0 8px 10px -6px hsl(var(--shadow-color) / 0.05);
+    --shadow-2xl: 0 25px 50px -12px hsl(var(--shadow-color) / 0.12);
+    --shadow: var(--shadow-md);
+  }
+
+  .dark {
+    --background: 222 14% 7%;
+    --foreground: 220 10% 94%;
+    --muted: 220 12% 13%;
+    --muted-foreground: 220 9% 52%;
+    --popover: 222 14% 9%;
+    --popover-foreground: 220 10% 94%;
+    --border: 220 13% 18%;
+    --input: 220 13% 15%;
+    --card: 222 14% 9%;
+    --card-foreground: 220 10% 94%;
+    --primary: 0 84% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 12% 15%;
+    --secondary-foreground: 220 10% 85%;
+    --accent: 0 84% 48%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --ring: 0 84% 48%;
+
+    --chart-1: 0 84% 52%;
+    --chart-2: 220 13% 68%;
+    --chart-3: 220 9% 50%;
+    --chart-4: 0 60% 55%;
+    --chart-5: 220 9% 35%;
+
+    --sidebar-background: 222 14% 5%;
+    --sidebar-foreground: 220 10% 90%;
+    --sidebar-primary: 0 84% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 12% 13%;
+    --sidebar-accent-foreground: 220 10% 85%;
+    --sidebar-border: 220 13% 14%;
+    --sidebar-ring: 0 84% 48%;
+
+    --shadow-color: 220 40% 2%;
+    --shadow-2xs: 0 1px 2px 0 hsl(var(--shadow-color) / 0.4);
+    --shadow-xs: 0 1px 2px 0 hsl(var(--shadow-color) / 0.5);
+    --shadow-sm: 0 1px 3px 0 hsl(var(--shadow-color) / 0.6), 0 1px 2px -1px hsl(var(--shadow-color) / 0.6);
+    --shadow-md: 0 4px 6px -1px hsl(var(--shadow-color) / 0.6), 0 2px 4px -2px hsl(var(--shadow-color) / 0.5);
+    --shadow-lg: 0 10px 15px -3px hsl(var(--shadow-color) / 0.7), 0 4px 6px -4px hsl(var(--shadow-color) / 0.5);
+    --shadow-xl: 0 20px 25px -5px hsl(var(--shadow-color) / 0.7), 0 8px 10px -6px hsl(var(--shadow-color) / 0.5);
+    --shadow-2xl: 0 25px 50px -12px hsl(var(--shadow-color) / 0.8);
     --shadow: var(--shadow-md);
   }
 }
@@ -89,7 +138,6 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  /* Removed red-glow — no glows */
 
   /* Section spacing */
   .section-padding {
@@ -134,5 +182,10 @@
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: hsl(var(--border));
     border-radius: 99px;
+  }
+
+  /* Safe area bottom padding for mobile nav */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }

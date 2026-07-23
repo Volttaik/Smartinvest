@@ -16,7 +16,9 @@ import {
   UserCircle, BellRing, ChevronDown, Search, CheckCheck,
   CalendarDays, Phone, MapPin, FileText, ShieldCheck, Shield, X,
   Lock, Camera, Upload, User, Sunrise, Sun, Moon,
+  Settings2, Monitor,
 } from "lucide-react";
+import { useTheme } from 'next-themes';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import BrandMark from "@/components/BrandMark";
@@ -46,7 +48,7 @@ function AvatarIcon({ picture, size = "md" }: { picture?: string; size?: "sm" | 
 }
 
 const PIE_COLORS = ["hsl(var(--primary))", "#3b82f6", "#10b981", "#8b5cf6", "#f97316"];
-type Tab = "overview" | "invest" | "transactions" | "referrals" | "fund" | "withdraw" | "portfolio" | "assets" | "myassets" | "profile" | "notifications" | "security";
+type Tab = "overview" | "invest" | "transactions" | "referrals" | "fund" | "withdraw" | "portfolio" | "assets" | "myassets" | "profile" | "notifications" | "security" | "settings";
 declare const PaystackPop: any;
 
 /* ─────────────────────────────────────────
@@ -136,10 +138,10 @@ function PnLChart({ chartData, totalEarned, totalInvested }: {
                 formatter={(v: any) => [`₦${parseFloat(v).toLocaleString()}`, view === "earnings" ? "Returns" : "Net P&L"]}
                 contentStyle={{
                   borderRadius: 12, border: "1px solid hsl(var(--border))",
-                  fontSize: 11, boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                  background: "#fff"
+                  fontSize: 11, boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+                  background: "hsl(var(--card))", color: "hsl(var(--foreground))"
                 }}
-                labelStyle={{ fontWeight: 600, marginBottom: 2 }}
+                labelStyle={{ fontWeight: 600, marginBottom: 2, color: "hsl(var(--foreground))" }}
               />
               {view === "pnl" && <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1} strokeDasharray="4 4" />}
               <Area
@@ -543,9 +545,9 @@ function PortfolioTab({ dashData, balance }: { dashData: any; balance: number })
       <div className="grid grid-cols-2 gap-3">
         {[
           { label: "Portfolio Value", value: `₦${balance.toLocaleString()}`,       icon: Wallet,     accent: "from-primary/10 to-primary/5",      iconBg: "bg-primary/15",   iconColor: "text-primary" },
-          { label: "Total Invested",  value: `₦${totalInvested.toLocaleString()}`,  icon: TrendingUp,  accent: "from-blue-50 to-blue-50/30",        iconBg: "bg-blue-100",     iconColor: "text-blue-600" },
-          { label: "Total Earned",    value: `₦${totalEarned.toLocaleString()}`,    icon: DollarSign,  accent: "from-emerald-50 to-emerald-50/30",  iconBg: "bg-emerald-100",  iconColor: "text-emerald-600" },
-          { label: "ROI",             value: `+${roi}%`,                            icon: BarChart3,   accent: "from-violet-50 to-violet-50/30",    iconBg: "bg-violet-100",   iconColor: "text-violet-600" },
+          { label: "Total Invested",  value: `₦${totalInvested.toLocaleString()}`,  icon: TrendingUp,  accent: "from-blue-500/10 to-blue-500/5",        iconBg: "bg-blue-500/15",     iconColor: "text-blue-500" },
+          { label: "Total Earned",    value: `₦${totalEarned.toLocaleString()}`,    icon: DollarSign,  accent: "from-emerald-500/10 to-emerald-500/5",  iconBg: "bg-emerald-500/15",  iconColor: "text-emerald-500" },
+          { label: "ROI",             value: `+${roi}%`,                            icon: BarChart3,   accent: "from-violet-500/10 to-violet-500/5",    iconBg: "bg-violet-500/15",   iconColor: "text-violet-500" },
         ].map(({ label, value, icon: Icon, accent, iconBg, iconColor }) => (
           <motion.div key={label}
             whileHover={{ y: -2, boxShadow: "0 8px 24px -4px rgba(0,0,0,0.08)" }}
@@ -617,8 +619,8 @@ function PortfolioTab({ dashData, balance }: { dashData: any; balance: number })
                 tickFormatter={v => v >= 1000 ? `₦${(v / 1000).toFixed(0)}k` : `₦${v}`} />
               <Tooltip
                 formatter={(v: any) => [`₦${parseFloat(v).toLocaleString()}`, "Earnings"]}
-                contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", fontSize: 11, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", background: "#fff" }}
-                labelStyle={{ fontWeight: 600, marginBottom: 2 }}
+                contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", fontSize: 11, boxShadow: "0 4px 20px rgba(0,0,0,0.12)", background: "hsl(var(--card))", color: "hsl(var(--foreground))" }}
+                labelStyle={{ fontWeight: 600, marginBottom: 2, color: "hsl(var(--foreground))" }}
               />
               <Area type="monotone" dataKey="earnings" stroke="hsl(var(--primary))"
                 fill="url(#port-grad)" strokeWidth={1}
@@ -1208,6 +1210,9 @@ function AssetsTab({ dashData }: { dashData: any }) {
 ───────────────────────────────────────── */
 export default function Dashboard() {
   const { user, logout, refreshUser } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const router = useRouter();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1513,6 +1518,7 @@ export default function Dashboard() {
     { id: "notifications",  icon: BellRing,      label: "Notifications", badge: unreadCount },
     { id: "profile",        icon: UserCircle,    label: "Profile" },
     { id: "security",       icon: Lock,          label: "Security" },
+    { id: "settings",       icon: Settings2,     label: "Settings" },
   ] as const;
 
   const currentNav = navItems.find(n => n.id === activeTab);
@@ -1536,8 +1542,8 @@ export default function Dashboard() {
             exit={{ opacity: 0, y: -16, scale: 0.96 }} transition={{ type: "spring", stiffness: 400, damping: 28 }}
             className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-sm font-medium border
               ${notification.type === "success"
-                ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                : "bg-red-50 border-red-200 text-red-800"}`}>
+                ? "bg-card border-emerald-500/30 text-emerald-500 dark:text-emerald-400"
+                : "bg-card border-red-500/30 text-red-500 dark:text-red-400"}`}>
             <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0
               ${notification.type === "success" ? "bg-emerald-500" : "bg-red-500"}`}>
               {notification.type === "success"
@@ -1550,7 +1556,7 @@ export default function Dashboard() {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <aside className={`fixed lg:sticky lg:top-0 z-40 flex flex-col h-screen bg-foreground w-64 shrink-0 transition-transform duration-300 rounded-b-[6px]
+      <aside className={`fixed lg:sticky lg:top-0 z-40 flex flex-col h-screen bg-zinc-950 w-64 shrink-0 transition-transform duration-300 rounded-b-[6px]
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
         <div className="p-5 border-b border-white/10">
           <Link href="/" className="flex items-center gap-2.5">
@@ -1641,6 +1647,11 @@ export default function Dashboard() {
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:brightness-110 transition-all">
               <Plus className="w-3.5 h-3.5" /> Add Funds
             </button>
+            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Toggle theme">
+              {mounted && (theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />)}
+            </button>
             <button onClick={async () => { setLoading(true); await loadDashboard(); await refreshUser(); fetch('/api/notifications', { headers: authHeaders() }).then(r => r.json()).then(d => { if (Array.isArray(d)) setNotifications(d); }).catch(() => {}); }}
               className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               <RefreshCw className="w-4 h-4" />
@@ -1676,7 +1687,7 @@ export default function Dashboard() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-20 lg:pb-0 scrollbar-thin">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center space-y-3">
@@ -1701,9 +1712,9 @@ export default function Dashboard() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {[
                       { label: "Total Balance", value: `₦${totalPortfolioBalance.toLocaleString()}`,                               icon: Wallet,     sub: `ROI: ₦${balance.toLocaleString()} · Capital: ₦${capitalBalance.toLocaleString()}`,    accent: "from-primary/10 to-primary/5",     iconBg: "bg-primary/15",     iconColor: "text-primary" },
-                      { label: "Invested",  value: `₦${parseFloat(dashData?.investments?.total_invested || 0).toLocaleString()}`,  icon: TrendingUp,  sub: `${dashData?.investments?.active_count || 0} active`,  accent: "from-blue-50 to-blue-50/30",       iconBg: "bg-blue-100",       iconColor: "text-blue-600" },
-                      { label: "Earned",    value: `₦${parseFloat(dashData?.investments?.total_earned || 0).toLocaleString()}`,    icon: DollarSign,  sub: "total returns", accent: "from-emerald-50 to-emerald-50/30", iconBg: "bg-emerald-100",    iconColor: "text-emerald-600" },
-                      { label: "Referrals", value: String(dashData?.referrals?.referred_users || 0),                               icon: Zap,         sub: `₦${parseFloat(dashData?.referrals?.earnings || 0).toLocaleString()} earned`, accent: "from-amber-50 to-amber-50/30", iconBg: "bg-amber-100", iconColor: "text-amber-600" },
+                      { label: "Invested",  value: `₦${parseFloat(dashData?.investments?.total_invested || 0).toLocaleString()}`,  icon: TrendingUp,  sub: `${dashData?.investments?.active_count || 0} active`,  accent: "from-blue-500/10 to-blue-500/5",       iconBg: "bg-blue-500/15",       iconColor: "text-blue-500" },
+                      { label: "Earned",    value: `₦${parseFloat(dashData?.investments?.total_earned || 0).toLocaleString()}`,    icon: DollarSign,  sub: "total returns", accent: "from-emerald-500/10 to-emerald-500/5", iconBg: "bg-emerald-500/15",    iconColor: "text-emerald-500" },
+                      { label: "Referrals", value: String(dashData?.referrals?.referred_users || 0),                               icon: Zap,         sub: `₦${parseFloat(dashData?.referrals?.earnings || 0).toLocaleString()} earned`, accent: "from-amber-500/10 to-amber-500/5", iconBg: "bg-amber-500/15", iconColor: "text-amber-500" },
                     ].map(({ label, value, icon: Icon, sub, accent, iconBg, iconColor }) => (
                       <motion.div key={label}
                         whileHover={{ y: -2, boxShadow: "0 8px 24px -4px rgba(0,0,0,0.08)" }}
@@ -1745,7 +1756,7 @@ export default function Dashboard() {
                             <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                             <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                             <Tooltip formatter={(v: any) => [`₦${parseFloat(v).toLocaleString()}`, "Earnings"]}
-                              contentStyle={{ borderRadius: 12, border: '1px solid hsl(var(--border))', fontSize: 11, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", background: "#fff" }} />
+                              contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", fontSize: 11, boxShadow: "0 4px 20px rgba(0,0,0,0.12)", background: "hsl(var(--card))", color: "hsl(var(--foreground))" }} />
                             <Area type="monotone" dataKey="earnings" stroke="hsl(var(--primary))"
                               fill="url(#earn-grad)" strokeWidth={1} dot={false} activeDot={{ r: 4, fill: "hsl(var(--primary))", stroke: "#fff", strokeWidth: 2 }} />
                           </AreaChart>
@@ -2558,17 +2569,17 @@ export default function Dashboard() {
                     ))}
                   </div>
 
-                  <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 space-y-4">
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-5 space-y-4">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
-                        <Shield className="w-5 h-5 text-blue-600" />
+                      <div className="w-9 h-9 rounded-xl bg-blue-500/15 flex items-center justify-center shrink-0">
+                        <Shield className="w-5 h-5 text-blue-500" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-sm text-blue-900">EasyBuy — Our Payment Channel</h3>
-                        <p className="text-xs text-blue-700">Safe virtual account funding powered by EasyBuy</p>
+                        <h3 className="font-semibold text-sm text-foreground">EasyBuy — Our Payment Channel</h3>
+                        <p className="text-xs text-muted-foreground">Safe virtual account funding powered by EasyBuy</p>
                       </div>
                     </div>
-                    <p className="text-xs text-blue-800 leading-relaxed">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
                       EasyBuy is our API-level payment provider integrated through Paystack. When you fund your wallet, Paystack generates a unique virtual bank account for your transaction through the EasyBuy infrastructure behind the scenes.
                     </p>
                     {[
@@ -2576,18 +2587,18 @@ export default function Dashboard() {
                       { title: "Instant crediting", desc: "Once your bank transfer reaches the virtual account, your SmartInvest wallet is credited automatically within seconds — no manual confirmation needed." },
                       { title: "No third-party access", desc: "EasyBuy does not store or share your bank account details. All account resolution is handled securely within Paystack's encrypted infrastructure." },
                     ].map(({ title, desc }) => (
-                      <div key={title} className="p-3 rounded-xl bg-white/60 border border-blue-100">
+                      <div key={title} className="p-3 rounded-xl bg-card/60 border border-border">
                         <div className="flex items-center gap-2 mb-1">
-                          <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                          <span className="text-xs font-semibold text-blue-900">{title}</span>
+                          <Check className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                          <span className="text-xs font-semibold text-foreground">{title}</span>
                         </div>
-                        <p className="text-xs text-blue-700 leading-relaxed pl-5">{desc}</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed pl-5">{desc}</p>
                       </div>
                     ))}
-                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex gap-2">
-                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <p className="text-xs text-amber-800">
-                        <strong>Important:</strong> Always verify the virtual account name shown on the Paystack checkout before making any transfer to confirm it belongs to your transaction.
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-xs text-muted-foreground">
+                        <strong className="text-foreground">Important:</strong> Always verify the virtual account name shown on the Paystack checkout before making any transfer to confirm it belongs to your transaction.
                       </p>
                     </div>
                   </div>
@@ -2682,10 +2693,110 @@ export default function Dashboard() {
                 </motion.div>
               )}
 
+              {/* ═══ SETTINGS ═══ */}
+              {activeTab === "settings" && (
+                <motion.div key="settings"
+                  initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.28 }} className="p-5 space-y-5">
+
+                  <div className="bg-zinc-900 dark:bg-zinc-950 rounded-2xl p-6 text-white border border-white/5">
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
+                      <Settings2 className="w-5 h-5 text-white" />
+                    </div>
+                    <h2 className="text-2xl font-bold font-display">Settings</h2>
+                    <p className="text-white/50 text-sm mt-0.5">Customize your SmartInvest experience.</p>
+                  </div>
+
+                  {/* Appearance */}
+                  <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+                    <h3 className="font-semibold text-sm mb-1">Appearance</h3>
+                    <p className="text-xs text-muted-foreground mb-4">Choose how SmartInvest looks to you.</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {([
+                        { value: "light" as const, label: "Light", icon: Sun },
+                        { value: "dark" as const, label: "Dark", icon: Moon },
+                        { value: "system" as const, label: "System", icon: Monitor },
+                      ]).map(({ value, label, icon: Icon }) => (
+                        <button key={value} onClick={() => setTheme(value)}
+                          className={`flex flex-col items-center gap-2.5 p-4 rounded-xl border-2 transition-all
+                            ${theme === value
+                              ? 'border-primary bg-primary/10 shadow-sm'
+                              : 'border-border bg-muted/30 hover:bg-muted/60'}`}>
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${theme === value ? 'bg-primary/15' : 'bg-muted'}`}>
+                            <Icon className={`w-4 h-4 ${theme === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                          </div>
+                          <span className={`text-xs font-semibold ${theme === value ? 'text-primary' : 'text-muted-foreground'}`}>{label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Account quick-links */}
+                  <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                    <div className="px-5 py-4 border-b border-border">
+                      <h3 className="font-semibold text-sm">Account</h3>
+                    </div>
+                    {([
+                      { id: "profile" as Tab, icon: UserCircle, label: "Edit Profile", desc: "Update your personal information" },
+                      { id: "security" as Tab, icon: Lock, label: "Security", desc: "Encryption and payment safety" },
+                      { id: "notifications" as Tab, icon: BellRing, label: "Notifications", desc: "View alerts and activity" },
+                    ]).map(({ id, icon: Icon, label, desc }, i, arr) => (
+                      <button key={id} onClick={() => setActiveTab(id)}
+                        className={`w-full flex items-center gap-3.5 px-5 py-4 hover:bg-muted/40 transition-colors text-left ${i < arr.length - 1 ? 'border-b border-border' : ''}`}>
+                        <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                          <Icon className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground">{label}</p>
+                          <p className="text-xs text-muted-foreground">{desc}</p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* App info */}
+                  <div className="bg-card border border-border rounded-2xl p-5 shadow-sm flex items-center gap-3">
+                    <BrandMark />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">SmartInvest</p>
+                      <p className="text-xs text-muted-foreground">v1.0.0 · AI Investment Platform</p>
+                    </div>
+                  </div>
+
+                  <button onClick={handleLogout}
+                    className="w-full flex items-center justify-center gap-2.5 p-3.5 rounded-xl border border-red-200 dark:border-red-900/50 text-red-500 hover:bg-red-500/5 transition-all text-sm font-medium">
+                    <LogOut className="w-4 h-4" /> Sign Out
+                  </button>
+                </motion.div>
+              )}
+
             </AnimatePresence>
           )}
         </main>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-background/95 dark:bg-background/98 backdrop-blur-xl border-t border-border pb-safe">
+        <div className="flex items-center justify-around px-1 h-16">
+          {([
+            { id: "overview" as Tab, icon: BarChart3, label: "Home" },
+            { id: "portfolio" as Tab, icon: PieChartIcon, label: "Portfolio" },
+            { id: "invest" as Tab, icon: Package, label: "Invest" },
+            { id: "fund" as Tab, icon: Wallet, label: "Wallet" },
+            { id: "settings" as Tab, icon: Settings2, label: "Settings" },
+          ]).map(({ id, icon: Icon, label }) => (
+            <button key={id} onClick={() => { setActiveTab(id); setSidebarOpen(false); }}
+              className={`flex flex-col items-center justify-center gap-1 flex-1 py-2 rounded-xl transition-all active:scale-95
+                ${activeTab === id ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <div className={`p-1.5 rounded-xl transition-all ${activeTab === id ? 'bg-primary/10' : ''}`}>
+                <Icon className="w-[18px] h-[18px]" />
+              </div>
+              <span className="text-[9px] font-semibold tracking-wide leading-none">{label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
 
       {/* Profile Setup Modal — shown on first login */}
       <AnimatePresence>

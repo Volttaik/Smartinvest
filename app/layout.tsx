@@ -6,9 +6,9 @@ export const metadata: Metadata = {
   title: 'SmartInvest - Your Wealth, Perfected',
   description: 'AI-driven investment platform for smart investors',
   icons: {
-    icon: '/favicon.jpg',
-    shortcut: '/favicon.jpg',
-    apple: '/favicon.jpg',
+    icon: '/smartinvest-logo.png',
+    shortcut: '/smartinvest-logo.png',
+    apple: '/smartinvest-logo.png',
   },
 };
 

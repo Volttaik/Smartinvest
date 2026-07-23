@@ -1,58 +1,38 @@
 modules = ["nodejs-20", "web"]
 [agent]
 expertMode = true
-
 [nix]
 channel = "stable-25_05"
 packages = ["nano"]
-
 [workflows]
 runButton = "Project"
-
 [[workflows.workflow]]
 name = "Project"
 mode = "parallel"
 author = "agent"
-
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Start application"
-
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
-
 [workflows.workflow.metadata]
 outputType = "webview"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
 
 [[ports]]
-localPort = 3001
-externalPort = 3001
-
-[[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 5001
-externalPort = 3002
-
 [deployment]
 deploymentTarget = "static"
 build = ["npm", "run", "build"]
 publicDir = "dist"
-
 [userenv]
-
 [userenv.shared]
 JWT_SECRET = "smartinvest_secret_key_change_me_in_production"
 INIT_SECRET = "smartinvest_init_secret"
 CRON_SECRET = "smartinvest_cron_secret"
-NODE_ENV = "development"
-MONGODB_URI = "mongodb+srv://Dev:0DCVQfc00TpRQ6d2@cluster0.moflf.mongodb.net/smartinvest?retryWrites=true&w=majority"
 FRONTEND_URL = "https://your-app.replit.app"

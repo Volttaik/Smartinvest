@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import BrandMark from "@/components/BrandMark";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
@@ -1553,9 +1554,7 @@ export default function Dashboard() {
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
         <div className="p-5 border-b border-white/10">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
-            </div>
+            <BrandMark />
             <span className="font-bold font-display text-lg text-white">
               Smart<span className="text-primary">Invest</span>
             </span>

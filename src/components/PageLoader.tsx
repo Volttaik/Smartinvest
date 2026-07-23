@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp } from "lucide-react";
+import BrandMark from "./BrandMark";
 
 export default function PageLoader() {
   const [visible, setVisible] = useState(() => {
@@ -35,9 +35,7 @@ export default function PageLoader() {
             transition={{ duration: 0.55, ease: [0.34, 1.2, 0.64, 1] }}
             className="flex flex-col items-center gap-6"
           >
-            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <TrendingUp className="w-7 h-7 text-white" />
-            </div>
+            <BrandMark className="h-14 w-14 rounded-2xl shadow-lg shadow-primary/20" />
 
             <div className="text-center">
               <div className="font-display text-2xl font-bold text-foreground tracking-tight">SmartInvest</div>

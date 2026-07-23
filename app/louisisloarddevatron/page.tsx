@@ -9,6 +9,7 @@ import {
   Send, ToggleLeft, ToggleRight, Edit3, Trash2,
   CreditCard, Clock, Mail, Lock,
 } from 'lucide-react';
+import BrandMark from '@/components/BrandMark';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(n || 0);
@@ -368,9 +369,7 @@ export default function AdminPage() {
       <aside className="w-56 bg-white border-r border-gray-100 flex flex-col min-h-screen shrink-0">
         <div className="p-5 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-white" />
-            </div>
+            <BrandMark className="h-8 w-8 rounded-lg" />
             <div>
               <p className="text-sm font-bold text-gray-900">SmartInvest</p>
               <p className="text-xs text-gray-400">Admin Panel</p>
@@ -813,7 +812,7 @@ export default function AdminPage() {
                 {!notifyAll && (
                   <div className="mb-3">
                     <label className="text-xs text-gray-500 mb-1 block">User ID</label>
-                    <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none" placeholder="MongoDB User ID" value={notifyUserId} onChange={e => setNotifyUserId(e.target.value)} />
+                    <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none" placeholder="User ID" value={notifyUserId} onChange={e => setNotifyUserId(e.target.value)} />
                   </div>
                 )}
                 <div className="mb-3">

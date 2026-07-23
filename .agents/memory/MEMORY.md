@@ -1,0 +1,2 @@
+- [Turso compatibility](turso-compatibility.md) — SQLite integer booleans and model-style filters need explicit normalization at the database boundary.
+- [Next build isolation](next-build-isolation.md) — run production builds with the dev workflow stopped so both processes do not mutate `.next` concurrently.

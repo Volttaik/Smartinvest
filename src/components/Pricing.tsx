@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Lock, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
-import { getPackages } from "@/lib/api";
 
 const TIER_STYLES: Record<string, { badge: string; dot: string }> = {
   Starter:      { badge: "bg-zinc-100 text-zinc-600 border-zinc-200",   dot: "bg-zinc-400" },
@@ -24,7 +23,14 @@ export default function Pricing() {
   const [tierFilter, setTierFilter] = useState("All");
 
   useEffect(() => {
-    getPackages().then(setPackages).catch(() => {}).finally(() => setLoading(false));
+    fetch("/api/packages")
+      .then((response) => {
+        if (!response.ok) throw new Error("Unable to load packages");
+        return response.json();
+      })
+      .then(setPackages)
+      .catch(() => setPackages([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const tiers = ["All", "Starter", "Basic", "Standard", "Advanced", "Professional", "Executive"];

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 import { Transaction } from '@/lib/models/Transaction';
@@ -20,7 +19,7 @@ export async function GET(req: NextRequest) {
 
     for (const refUser of referred) {
       const investmentTotal = await Transaction.aggregate([
-        { $match: { user_id: new mongoose.Types.ObjectId(refUser._id), type: 'investment', status: 'completed' } },
+        { $match: { user_id: refUser._id, type: 'investment', status: 'completed' } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]);
       refUser.total_invested = investmentTotal[0]?.total || 0;

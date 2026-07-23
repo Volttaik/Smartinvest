@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 import { Investment } from '@/lib/models/Investment';
@@ -13,15 +12,13 @@ export async function GET(req: NextRequest) {
     const userId = verifyToken(req);
     await connectDB();
 
-    const userObjId = new mongoose.Types.ObjectId(userId);
-
     const user = await User.findById(userId).select(
       'username email profile_picture balance referral_code referral_earnings total_earnings created_at'
     );
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     const invSummary = await Investment.aggregate([
-      { $match: { user_id: userObjId } },
+      { $match: { user_id: userId } },
       {
         $group: {
           _id: null,
@@ -55,7 +52,7 @@ export async function GET(req: NextRequest) {
     const monthlyData = await Transaction.aggregate([
       {
         $match: {
-          user_id: userObjId,
+          user_id: userId,
           created_at: { $gt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) },
           status: 'completed',
         },
@@ -84,7 +81,7 @@ export async function GET(req: NextRequest) {
     const dailyReturnHistory = await Transaction.aggregate([
       {
         $match: {
-          user_id: userObjId,
+          user_id: userId,
           type: 'daily_return',
           status: 'completed',
           created_at: { $gt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },

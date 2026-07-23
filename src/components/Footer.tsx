@@ -1,7 +1,7 @@
 'use client';
 
-import { TrendingUp } from "lucide-react";
 import Link from "next/link";
+import BrandMark from "./BrandMark";
 
 const footerLinks = {
   Company: [
@@ -33,9 +33,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2.5 mb-5">
-              <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-                <TrendingUp className="w-3.5 h-3.5 text-white" />
-              </div>
+              <BrandMark />
               <span className="font-bold font-display text-base text-foreground">SmartInvest</span>
             </Link>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-[190px]">

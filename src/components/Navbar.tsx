@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, TrendingUp } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
+import BrandMark from "./BrandMark";
 
 function ProfileAvatar({ src, size = "sm" }: { src?: string; size?: "sm" | "md" }) {
   const dim = size === "sm" ? "w-6 h-6" : "w-9 h-9";
@@ -53,9 +54,7 @@ export default function Navbar() {
 
   const Logo = () => (
     <Link href="/" className="flex items-center gap-2.5 group" onClick={() => setMenuOpen(false)}>
-      <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-sm group-hover:bg-primary/90 transition-colors flex-shrink-0">
-        <TrendingUp className="w-3.5 h-3.5 text-white" />
-      </div>
+      <BrandMark className="h-8 w-8 transition-transform group-hover:scale-105" />
       <span className="text-base font-bold tracking-tight font-display text-foreground">
         SmartInvest
       </span>
